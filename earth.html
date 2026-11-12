@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Earth</title>
+<style>
+/* An interactive 3D Earth (Three.js). Real day/night with city lights, clouds and atmosphere;
+   a to-scale interior cutaway (crust → core); the layered atmosphere; and the tectonic plates.
+   Seasons and the day/night line follow the real 23.44° axial tilt for the chosen date. */
+:root{
+  --ink:#eaf3ff; --muted:#8fa2c4; --panel:rgba(12,20,32,.82); --rule:rgba(110,150,200,.22);
+  --accent:#49c6ff; --accent2:#5fe0a8; --warm:#ff9d3c;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#03060d;color:var(--ink);font-family:var(--font);overflow:hidden}
+canvas{display:block;position:fixed;inset:0;touch-action:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.glass{background:var(--panel);border:1px solid var(--rule);border-radius:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+
+/* top bar */
+#top{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:12px;padding:8px 12px;z-index:10;pointer-events:none}
+#top>*{pointer-events:auto}
+#top h1{font-size:15px;margin:0;font-weight:800;letter-spacing:.02em;white-space:nowrap;display:flex;align-items:center;gap:7px}
+#top h1 .d{color:var(--accent)}
+#modes{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;padding:2px}
+#modes::-webkit-scrollbar{display:none}
+.mchip{flex:none;display:flex;align-items:center;gap:7px;border:1px solid var(--rule);background:rgba(255,255,255,.04);border-radius:999px;padding:5px 13px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.mchip:hover{background:rgba(255,255,255,.1)}
+.mchip.on{background:var(--ink);color:#07101e;border-color:var(--ink);font-weight:700}
+
+/* dock */
+#dock{position:fixed;left:12px;bottom:12px;right:12px;display:flex;align-items:center;gap:14px;padding:10px 14px;z-index:10;flex-wrap:wrap}
+#play{width:40px;height:40px;border-radius:50%;border:1px solid var(--rule);background:rgba(255,255,255,.05);cursor:pointer;font-size:15px;flex:none}
+.tl{flex:1;min-width:210px}
+.tlhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px}
+#dateLbl{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+#rate{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#time{width:100%;margin:0}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctl button,.seg button{border:1px solid var(--rule);background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px;font-size:12.5px;cursor:pointer}
+.ctl button:hover,.seg button:hover{background:rgba(255,255,255,.12)}
+.ctl button.active{background:var(--accent);color:#06121e;border-color:var(--accent);font-weight:700}
+.seg{display:flex;gap:4px}
+.seg button.active{background:var(--accent);color:#06121e;border-color:var(--accent);font-weight:700}
+.tog{display:flex;gap:4px;flex-wrap:wrap}
+.tog button.active{background:var(--accent2);color:#06121e;border-color:var(--accent2);font-weight:700}
+
+/* info panel */
+#info{position:fixed;top:60px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:calc(100vh - 150px);overflow-y:auto;padding:0;z-index:11;transform:translateX(118%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+#info.on{transform:none}
+@media(prefers-reduced-motion:reduce){#info{transition:none}}
+.ihead{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--rule)}
+.ihead .dot{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 16px currentColor;background:currentColor}
+.ihead .t{flex:1;min-width:0}
+.ihead h2{margin:0;font-size:19px;font-weight:800}
+.ihead .sub{font-size:12px;color:var(--muted)}
+.ihead .x{border:1px solid var(--rule);background:transparent;border-radius:999px;width:30px;height:30px;font-size:15px;cursor:pointer;flex:none}
+.ibody{padding:12px 16px 18px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.st{background:rgba(255,255,255,.04);border:1px solid var(--rule);border-radius:9px;padding:7px 9px}
+.st .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.st .v{font-size:14px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.ibody p{font-size:13px;line-height:1.55;color:#cfe0f6;margin:10px 0 0}
+.ibody .facts{margin:10px 0 0;padding-left:16px;font-size:13px;line-height:1.55;color:#cfe0f6}
+.ibody .facts li{margin:3px 0}
+.credit{font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.5;border-top:1px solid var(--rule);padding-top:8px}
+
+/* legend for layered modes */
+#legend{position:fixed;left:12px;top:58px;z-index:9;padding:10px 12px;max-width:230px;transition:opacity .3s}
+#legend.hide{opacity:0;pointer-events:none}
+#legend .lt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.lrow{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:7px;cursor:pointer;font-size:12.5px}
+.lrow:hover{background:rgba(255,255,255,.07)}
+.lrow i{width:12px;height:12px;border-radius:3px;flex:none;box-shadow:0 0 6px currentColor;background:currentColor}
+.lrow .lr-sub{color:var(--muted);font-size:11px}
+
+/* hover tooltip + loading + help */
+#tip{position:fixed;pointer-events:none;z-index:9;background:rgba(8,14,24,.92);border:1px solid var(--rule);border-radius:7px;padding:3px 8px;font-size:12px;opacity:0;transform:translate(-50%,-150%);white-space:nowrap}
+#load{position:fixed;inset:0;display:grid;place-items:center;z-index:30;background:#03060d;transition:opacity .5s}
+#load.gone{opacity:0;pointer-events:none}
+#load .l{text-align:center}
+#load .ring{width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin 1s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#load .t{font-size:13px;color:var(--muted);letter-spacing:.08em}
+#help{position:fixed;left:12px;bottom:82px;z-index:9;font-size:11.5px;color:var(--muted);max-width:250px;line-height:1.5;padding:9px 12px;transition:opacity .4s}
+#help.gone{opacity:0;pointer-events:none}
+.plabel{position:fixed;transform:translate(-50%,-50%);font-size:11px;font-weight:600;color:#dce8fb;text-shadow:0 1px 4px #000,0 0 3px #000;pointer-events:none;z-index:8;white-space:nowrap}
+@media (max-width:760px){
+  #info{top:auto;bottom:140px;right:12px;left:12px;width:auto;max-height:46vh;transform:translateY(130%)}
+  #info.on{transform:none}
+  #help,#legend{display:none}
+  #top h1 span.full{display:none}
+}
+</style>
+</head>
+<body>
+<div id="load"><div class="l"><div class="ring"></div><div class="t">LOADING EARTH…</div></div></div>
+
+<div id="top">
+  <h1><span class="d">◍</span> <span class="full">Our&nbsp;</span>Earth</h1>
+  <div id="modes"></div>
+</div>
+
+<div id="help" class="glass">Drag to rotate · scroll to zoom · click the globe for details. The day/night line and seasons follow Earth's real 23.44° tilt for the date below.</div>
+
+<div id="legend" class="glass hide"></div>
+
+<aside id="info" class="glass"></aside>
+
+<div id="dock" class="glass">
+  <button id="play" title="Play / pause time">⏸</button>
+  <div class="tl">
+    <div class="tlhead"><span id="dateLbl"></span><span id="rate"></span></div>
+    <input id="time" type="range" min="-3652" max="3652" value="0" step="0.01" aria-label="Date offset in days from today">
+  </div>
+  <div class="ctl">
+    <button id="now">Today</button>
+    <div class="seg" id="speeds">
+      <button data-sp="0.0417">1h/s</button><button data-sp="1" class="active">1d/s</button>
+      <button data-sp="10">10d/s</button><button data-sp="30">1mo/s</button>
+    </div>
+    <div class="tog" id="toggles"></div>
+  </div>
+</div>
+
+<div id="tip"></div>
+
+<script type="module">
+import * as THREE from './solar-assets/three.module.min.js';
+const T='./solar-assets/';
+const d2r=Math.PI/180, R=10;              // Earth display radius (units)
+const EPS=23.44;                          // axial tilt (obliquity), degrees
+
+/* ------------------------------------------------------------------ data (researched)
+   Vitals: NASA Earth fact sheet. Interior depths/temps: USGS, PREM. Atmosphere: NOAA / UCAR. */
+const EARTH={
+  name:"Earth", type:"The only known living world",
+  stats:[
+    ["Mean radius","6,371 km"],["Equatorial radius","6,378 km"],
+    ["Circumference","40,075 km"],["Surface area","510 million km²"],
+    ["Mass","5.97 × 10²⁴ kg"],["Mean density","5.51 g/cm³"],
+    ["Surface gravity","9.81 m/s²"],["Axial tilt","23.44°"],
+    ["Day (sidereal)","23h 56m 4s"],["Year","365.256 days"],
+    ["From the Sun","149.6 million km"],["Age","4.54 billion years"],
+    ["Mean surface temp","15 °C"],["Natural satellites","1 — the Moon"],
+  ],
+  comp:"Atmosphere: 78% nitrogen · 21% oxygen · ~1% argon · 0.04% CO₂",
+  facts:[
+    "71% of the surface is ocean — Earth is the only planet with liquid water on its surface.",
+    "The 23.44° tilt of the spin axis, not distance from the Sun, is what gives us the seasons.",
+    "A churning ocean of liquid iron in the outer core generates the magnetic field that shields life from the solar wind.",
+    "The Moon is drifting away at about 3.8 cm a year and slowly lengthening our day.",
+  ],
+};
+const MOON={
+  name:"The Moon", type:"Earth's natural satellite",
+  stats:[
+    ["Radius","1,737 km (0.27 Earth)"],["Mass","7.35 × 10²² kg"],
+    ["Surface gravity","1.62 m/s²"],["Mean distance","384,400 km"],
+    ["Orbital period","27.32 days"],["Day length","29.5 days"],
+    ["Axial tilt","6.7°"],["Surface temp","−173 to 127 °C"],
+  ],
+  facts:[
+    "The same side always faces us — its spin and orbit are locked together (synchronous rotation).",
+    "Its gravity raises the ocean tides and steadies Earth's tilt, keeping our climate stable.",
+    "Likely born when a Mars-sized body struck the young Earth and the debris coalesced.",
+    "The phases you see are just how much of its sunlit half is turned toward Earth.",
+  ],
+};
+// interior shells — display radii are to true scale (r/6371 × R). Depth measured from the surface.
+const LAYERS=[
+  {k:"crust",name:"Crust",r0:9.945,r1:10.0,col:"#6f5542",glow:false,
+   depth:"0 – ~35 km (5–70 km)",thick:"5–70 km",temp:"15 → ~400 °C",state:"Solid rock",
+   comp:"Granite (continents), basalt (ocean floor)",
+   facts:["The thin, brittle skin we live on — oceanic crust is only ~7 km thick, continental crust up to 70 km.","Broken into tectonic plates that drift a few centimetres a year.","Thinner than an apple's skin in proportion to the whole Earth."]},
+  {k:"umantle",name:"Upper mantle",r0:8.95,r1:9.945,col:"#9a3b22",glow:false,
+   depth:"~35 – 670 km",thick:"~635 km",temp:"~500 → 1,500 °C",state:"Solid, but slowly flowing",
+   comp:"Peridotite (silicates rich in iron & magnesium)",
+   facts:["Includes the asthenosphere — hot rock soft enough to creep, letting the plates above slide.","Convection here is the engine that drives plate tectonics.","Solid, yet over millions of years it flows like extremely stiff putty."]},
+  {k:"lmantle",name:"Lower mantle",r0:5.465,r1:8.95,col:"#c6502a",glow:false,
+   depth:"670 – 2,890 km",thick:"~2,220 km",temp:"1,500 → 3,700 °C",state:"Solid (high pressure)",
+   comp:"Dense silicate minerals (bridgmanite)",
+   facts:["The largest layer by volume — most of Earth's bulk.","Stays solid despite the heat because the immense pressure packs the rock tight.","Ends at the core–mantle boundary, 2,890 km down."]},
+  {k:"ocore",name:"Outer core",r0:1.916,r1:5.465,col:"#ff9d3c",glow:true,
+   depth:"2,890 – 5,150 km",thick:"~2,260 km",temp:"3,700 → 5,000 °C",state:"Liquid metal",
+   comp:"Molten iron & nickel",
+   facts:["A swirling ocean of liquid iron — its motion is a dynamo that generates Earth's magnetic field.","Without it, the solar wind would strip away our atmosphere.","Flows at roughly the speed the clouds above it drift."]},
+  {k:"icore",name:"Inner core",r0:0,r1:1.916,col:"#fff0b8",glow:true,
+   depth:"5,150 – 6,371 km",thick:"1,221 km radius",temp:"~5,200 °C",state:"Solid metal",
+   comp:"Iron–nickel alloy",
+   facts:["As hot as the surface of the Sun, yet solid — crushing pressure keeps the iron from melting.","Grows a little each year as the Earth slowly cools.","Spins at a slightly different rate from the rest of the planet."]},
+];
+// atmosphere layers — display radii exaggerated so thin layers are visible (real altitudes in labels).
+const ATMO=[
+  {k:"tropo",name:"Troposphere",base:"0 km",top:"~12 km",r0:R,r1:10.55,col:"#5fb8ff",
+   facts:["Where all weather happens and where we breathe — holds ~75% of the atmosphere's mass.","Nearly every cloud and storm lives here.","Gets colder with height, down to about −55 °C at the top."]},
+  {k:"strato",name:"Stratosphere",base:"~12 km",top:"~50 km",r0:10.55,r1:11.2,col:"#8f7fe8",
+   facts:["Home to the ozone layer, which soaks up the Sun's harmful ultraviolet rays.","Calm and dry — airliners cruise in its lower reaches.","Unusually, it gets warmer with height."]},
+  {k:"meso",name:"Mesosphere",base:"~50 km",top:"~85 km",r0:11.2,r1:11.9,col:"#b589e0",
+   facts:["Meteors burn up here, making the shooting stars we see.","The coldest place in the atmosphere — near −90 °C at its top.","Too high for planes, too low for satellites."]},
+  {k:"thermo",name:"Thermosphere",base:"~85 km",top:"~600 km",r0:11.9,r1:13.3,col:"#ff8f6b",
+   facts:["Auroras glow here when solar particles strike the thin gas.","Can soar past 2,000 °C, yet would feel cold — the air is far too sparse to warm you.","The ISS orbits inside it, near 400 km up. The Kármán line (100 km), the edge of space, sits near its base."]},
+  {k:"exo",name:"Exosphere",base:"~600 km",top:"~10,000 km",r0:13.3,r1:15.4,col:"#7bc6b0",
+   facts:["The outermost whisper of atmosphere, fading into space.","Lone atoms of hydrogen and helium slowly leak away to the void.","Most weather and communications satellites orbit here."]},
+];
+
+/* ------------------------------------------------------------------ renderer / scene */
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 0.05, 20000);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.localClippingEnabled=true;
+document.body.appendChild(renderer.domElement);
+const canvas=renderer.domElement;
+
+const loader=new THREE.TextureLoader();
+let pending=0;
+function tex(file,srgb){ pending++; return loader.load(T+file,
+  t=>{ if(srgb) t.colorSpace=THREE.SRGBColorSpace; if(--pending<=0) hideLoader(); },
+  undefined, ()=>{ if(--pending<=0) hideLoader(); }); }
+
+scene.add(new THREE.AmbientLight(0xffffff,0.2));
+const sunLight=new THREE.DirectionalLight(0xffffff,2.4);   // the Sun's light (the Sun itself is not drawn)
+scene.add(sunLight);
+scene.add(sunLight.target);
+const headLight=new THREE.DirectionalLight(0xffffff,1.0);  // follows the camera; lights the cutaway/shells
+headLight.visible=false; scene.add(headLight); scene.add(headLight.target);
+
+// starfield
+(function stars(){
+  const n=3500,g=new THREE.BufferGeometry(),p=new Float32Array(n*3);
+  for(let i=0;i<n;i++){ const r=2600+Math.random()*1200,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+    p[i*3]=r*Math.sin(ph)*Math.cos(th); p[i*3+1]=r*Math.cos(ph); p[i*3+2]=r*Math.sin(ph)*Math.sin(th); }
+  g.setAttribute("position",new THREE.BufferAttribute(p,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2.2,sizeAttenuation:true,transparent:true,opacity:.8})));
+})();
+
+/* ------------------------------------------------------------------ Earth (day/night shader) */
+const obliq=new THREE.Group();            // fixed axial tilt
+obliq.rotation.x=EPS*d2r;                 // north pole leans toward +Z → equinox/solstice come out right
+scene.add(obliq);
+const spin=new THREE.Group();             // Earth's daily rotation
+obliq.add(spin);
+
+const earthUniforms={
+  dayMap:{value:tex("earth_day2k.jpg",false)},
+  nightMap:{value:tex("earth_night.jpg",false)},
+  specMap:{value:tex("earth_spec.jpg",false)},
+  sunDir:{value:new THREE.Vector3(1,0,0)},
+  camPos:{value:new THREE.Vector3()},
+  uNight:{value:1},
+};
+const earthMat=new THREE.ShaderMaterial({
+  uniforms:earthUniforms,
+  vertexShader:`
+    varying vec2 vUv; varying vec3 vNormalW; varying vec3 vPosW;
+    void main(){ vUv=uv; vNormalW=normalize(mat3(modelMatrix)*normal);
+      vec4 wp=modelMatrix*vec4(position,1.0); vPosW=wp.xyz;
+      gl_Position=projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader:`
+    uniform sampler2D dayMap,nightMap,specMap; uniform vec3 sunDir,camPos; uniform float uNight;
+    varying vec2 vUv; varying vec3 vNormalW; varying vec3 vPosW;
+    void main(){
+      vec3 N=normalize(vNormalW); vec3 L=normalize(sunDir);
+      float d=dot(N,L); float lit=clamp(d,0.0,1.0);
+      float t=smoothstep(-0.09,0.14,d);
+      vec3 day=texture2D(dayMap,vUv).rgb;
+      vec3 night=texture2D(nightMap,vUv).rgb;
+      float water=texture2D(specMap,vUv).r;
+      vec3 V=normalize(camPos-vPosW); vec3 H=normalize(L+V);
+      float spec=pow(max(dot(N,H),0.0),28.0)*water*step(0.0,d);
+      vec3 col=mix(night*uNight*1.25, day*(0.06+0.98*lit), t);
+      col+=vec3(0.75,0.82,0.95)*spec*0.55;
+      float rim=pow(1.0-max(dot(N,V),0.0),2.6)*lit;
+      col+=vec3(0.28,0.55,1.0)*rim*0.45;
+      gl_FragColor=vec4(col,1.0);
+    }`,
+});
+const earth=new THREE.Mesh(new THREE.SphereGeometry(R,96,64),earthMat);
+earth.userData.pick="earth";
+spin.add(earth);
+
+// clouds
+const clouds=new THREE.Mesh(new THREE.SphereGeometry(R*1.012,80,48),
+  new THREE.MeshStandardMaterial({map:tex("earth_clouds2k.jpg",true),alphaMap:tex("earth_clouds2k.jpg",false),
+    transparent:true,opacity:.9,depthWrite:false,roughness:1,metalness:0,blending:THREE.NormalBlending}));
+clouds.material.color=new THREE.Color(0xffffff);
+spin.add(clouds);
+
+// atmosphere glow (fresnel shell)
+const atmoGlow=new THREE.Mesh(new THREE.SphereGeometry(R*1.025,64,48),
+  new THREE.ShaderMaterial({
+    uniforms:{camPos:{value:new THREE.Vector3()},glow:{value:new THREE.Color(0x4aa6ff)}},
+    vertexShader:`varying vec3 vN; varying vec3 vP;
+      void main(){ vN=normalize(mat3(modelMatrix)*normal); vec4 wp=modelMatrix*vec4(position,1.0); vP=wp.xyz;
+        gl_Position=projectionMatrix*viewMatrix*wp; }`,
+    fragmentShader:`uniform vec3 camPos,glow; varying vec3 vN; varying vec3 vP;
+      void main(){ vec3 V=normalize(camPos-vP); float i=pow(1.0-abs(dot(vN,V)),3.2);
+        gl_FragColor=vec4(glow, i*0.6); }`,
+    transparent:true, side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false }));
+spin.add(atmoGlow);
+
+// spin axis + equator (toggle)
+const axisGroup=new THREE.Group();
+(function(){
+  const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-R*1.4,0),new THREE.Vector3(0,R*1.4,0)]);
+  axisGroup.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0x9fd8ff,transparent:true,opacity:.8})));
+  const eq=new THREE.Mesh(new THREE.RingGeometry(R*1.001,R*1.004,128),
+    new THREE.MeshBasicMaterial({color:0x9fd8ff,side:THREE.DoubleSide,transparent:true,opacity:.5}));
+  eq.rotation.x=Math.PI/2; axisGroup.add(eq);
+})();
+axisGroup.visible=false;
+obliq.add(axisGroup);                      // tilts with the axis, not the daily spin
+
+// tectonic plates overlay (loaded async)
+const plates=new THREE.Group(); plates.visible=false; spin.add(plates);
+function lonlat(lon,lat,rad){ const th=Math.PI+lon*d2r, ph=(90-lat)*d2r;
+  return new THREE.Vector3(-rad*Math.cos(th)*Math.sin(ph), rad*Math.cos(ph), rad*Math.sin(th)*Math.sin(ph)); }
+fetch(T+"plates.json").then(r=>r.json()).then(d=>{
+  const mat=new THREE.LineBasicMaterial({color:0x5fe0a8,transparent:true,opacity:.85});
+  for(const line of d.lines){
+    const pts=line.map(([lon,lat])=>lonlat(lon,lat,R*1.004));
+    plates.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat));
+  }
+}).catch(()=>{});
+
+// Moon
+const moonOrbit=new THREE.Group(); scene.add(moonOrbit);
+const moon=new THREE.Mesh(new THREE.SphereGeometry(R*0.273,48,32),
+  new THREE.MeshStandardMaterial({map:tex("moon.jpg",true),roughness:1,metalness:0}));
+moon.userData.pick="moon";
+const MOON_DIST=26;
+moon.position.set(MOON_DIST,0,0); moonOrbit.add(moon);
+
+/* ------------------------------------------------------------------ interior cutaway */
+const gInterior=new THREE.Group(); gInterior.visible=false; scene.add(gInterior);
+const clipA=new THREE.Plane(new THREE.Vector3(-1,0,0),0);   // removed wedge: x>0 AND z>0 (facing the default camera)
+const clipB=new THREE.Plane(new THREE.Vector3(0,0,-1),0);
+const CLIP=[clipA,clipB];
+const intShells=[];
+for(const L of LAYERS){
+  if(L.r1<=0) continue;
+  const mat = L.glow
+    ? new THREE.MeshBasicMaterial({color:L.col,clippingPlanes:CLIP,clipIntersection:true,side:THREE.DoubleSide})
+    : new THREE.MeshStandardMaterial({color:L.col,roughness:.95,metalness:0,clippingPlanes:CLIP,clipIntersection:true,side:THREE.DoubleSide});
+  const sph=new THREE.Mesh(new THREE.SphereGeometry(L.r1,72,48),mat);
+  sph.userData.layer=L; gInterior.add(sph); intShells.push(sph);
+}
+// flat concentric caps on the two cut faces (half-discs), so the cross-section reads solid
+function buildCaps(){
+  for(const rot of [0, -Math.PI/2]){           // z=0 plane, then x=0 plane
+    const capG=new THREE.Group(); capG.rotation.y=rot;
+    for(const L of LAYERS){
+      const geo = L.r0<=0
+        ? new THREE.CircleGeometry(L.r1,64,-Math.PI/2,Math.PI)
+        : new THREE.RingGeometry(L.r0,L.r1,64,1,-Math.PI/2,Math.PI);
+      const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:L.col,side:THREE.DoubleSide}));
+      m.userData.layer=L; capG.add(m);
+    }
+    gInterior.add(capG);
+  }
+}
+buildCaps();
+// a faint textured skin on the outer crust so the cutaway still looks like Earth
+const intSkin=new THREE.Mesh(new THREE.SphereGeometry(R,72,48),
+  new THREE.MeshStandardMaterial({map:tex("earth_day2k.jpg",true),roughness:1,metalness:0,
+    clippingPlanes:CLIP,clipIntersection:true,side:THREE.FrontSide}));
+intSkin.userData.layer=LAYERS[0]; gInterior.add(intSkin);
+
+/* ------------------------------------------------------------------ atmosphere shells */
+const gAtmo=new THREE.Group(); gAtmo.visible=false; scene.add(gAtmo);
+const atmoShells=[];
+for(const A of ATMO){
+  const mat=new THREE.MeshBasicMaterial({color:A.col,transparent:true,opacity:.34,side:THREE.BackSide,depthWrite:false});
+  const sph=new THREE.Mesh(new THREE.SphereGeometry(A.r1,64,40),mat);
+  sph.userData.atmo=A; gAtmo.add(sph); atmoShells.push(sph);
+}
+// small Earth inside the shells (reuse surface look via its own textured globe)
+const atmoEarth=new THREE.Mesh(new THREE.SphereGeometry(R,72,48),
+  new THREE.MeshStandardMaterial({map:tex("earth_day2k.jpg",true),roughness:1,metalness:0}));
+gAtmo.add(atmoEarth);
+// Kármán line (edge of space, ~100 km) — a thin camera-facing ring outline near the mesosphere/thermosphere boundary
+const karman=new THREE.Mesh(new THREE.RingGeometry(11.9,11.98,160),
+  new THREE.MeshBasicMaterial({color:0xdce8ff,side:THREE.DoubleSide,transparent:true,opacity:.65,depthWrite:false}));
+gAtmo.add(karman);
+
+/* ------------------------------------------------------------------ labels (DOM) */
+const labelBox=document.createElement("div"); document.body.appendChild(labelBox);
+const labels=[];   // {el, getPos()}
+function mkLabel(text){ const el=document.createElement("div"); el.className="plabel"; el.textContent=text;
+  el.style.display="none"; labelBox.appendChild(el); return el; }
+// interior labels at mid-radius on the x=0 cut face (+z side); skip the crust (it's the visible skin)
+for(const L of LAYERS){ if(L.k==="crust") continue; const el=mkLabel(L.name);
+  const rMid=(L.r0+L.r1)/2 || L.r1*0.5;
+  labels.push({el, pos:new THREE.Vector3(0.001, 0, rMid), grp:gInterior, show:()=>mode==="interior"}); }
+// atmosphere labels
+for(const A of ATMO){ const el=mkLabel(A.name+" · "+A.top);
+  const rMid=(A.r0+A.r1)/2;
+  labels.push({el, pos:new THREE.Vector3(0, rMid, 0.001), grp:gAtmo, show:()=>mode==="atmosphere"}); }
+// Kármán line label (edge of space)
+(()=>{ const el=mkLabel("Kármán line · 100 km · edge of space"); el.style.color="#cfe3ff";
+  labels.push({el, pos:new THREE.Vector3(0.001,0,12.0), grp:gAtmo, show:()=>mode==="atmosphere"}); })();
+
+/* ------------------------------------------------------------------ time + sun direction */
+const DAY=86400000, EPOCH=Date.now();
+let offsetDays=0, playing=true, rate=1;
+const timeEl=document.getElementById("time"), dateLbl=document.getElementById("dateLbl"), rateEl=document.getElementById("rate");
+function simDate(){ return new Date(EPOCH+offsetDays*DAY); }
+function dayOfYear(d){ const s=new Date(Date.UTC(d.getUTCFullYear(),0,0)); return (d-s)/DAY; }
+const SEASONS=["Winter","Spring","Summer","Autumn"];
+let subLat=0, season="";
+function updateSun(){
+  const date=simDate();
+  // sun's ecliptic longitude from the March equinox (~day 79.8)
+  const yr=((date.getUTCFullYear()%4)===0)?366:365;
+  const lam=2*Math.PI*((dayOfYear(date)-79.8)/365.2422);
+  // sun direction in world (ecliptic) frame; y = ecliptic north
+  const sd=new THREE.Vector3(Math.cos(lam),0,Math.sin(lam)).normalize();
+  earthUniforms.sunDir.value.copy(sd);
+  sunLight.position.copy(sd.clone().multiplyScalar(500)); sunLight.target.position.set(0,0,0);
+  // sub-solar latitude = asin(sin ε · sin λ'); season for the northern hemisphere
+  subLat=Math.asin(Math.sin(EPS*d2r)*Math.sin(lam))/d2r;
+  const m=date.getUTCMonth();
+  season=["Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Autumn","Autumn","Autumn","Winter"][m];
+  // daily spin (illustrative): one turn per day, plus a slow season drift already in sun
+  spin.rotation.y=2*Math.PI*((offsetDays%1)+ (date.getUTCHours()/24));
+  // moon orbit (phase emerges from lighting); keep roughly in ecliptic
+  const ma=2*Math.PI*(offsetDays/27.32);
+  moon.position.set(Math.cos(ma)*MOON_DIST,0,Math.sin(ma)*MOON_DIST);
+  dateLbl.textContent=date.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
+}
+
+/* ------------------------------------------------------------------ camera (custom orbit) */
+const camTarget=new THREE.Vector3();
+let camR=30, camTheta=0.7, camPhi=1.1, tR=camR, tTheta=camTheta, tPhi=camPhi;
+function applyCam(){
+  camR+=(tR-camR)*.14; camTheta+=(tTheta-camTheta)*.14; camPhi+=(tPhi-camPhi)*.14;
+  camera.position.set(camTarget.x+camR*Math.sin(camPhi)*Math.cos(camTheta),
+    camTarget.y+camR*Math.cos(camPhi), camTarget.z+camR*Math.sin(camPhi)*Math.sin(camTheta));
+  camera.lookAt(camTarget);
+  earthUniforms.camPos.value.copy(camera.position);
+  atmoGlow.material.uniforms.camPos.value.copy(camera.position);
+  headLight.position.copy(camera.position); headLight.target.position.copy(camTarget);
+}
+let drag=null;
+canvas.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y:e.clientY,moved:false}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove",e=>{ tipMove(e); if(!drag)return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true;
+  tTheta-=dx*0.006; tPhi=Math.max(0.08,Math.min(Math.PI-0.08,tPhi-dy*0.006));
+  drag.x=e.clientX; drag.y=e.clientY; });
+canvas.addEventListener("pointerup",e=>{ if(drag&&!drag.moved) pick(e); drag=null; });
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); tR=Math.max(12,Math.min(120,tR*(e.deltaY<0?0.86:1.16))); },{passive:false});
+
+/* ------------------------------------------------------------------ picking + hover */
+const ray=new THREE.Raycaster(), m2=new THREE.Vector2(), tipEl=document.getElementById("tip");
+function pickList(){
+  if(mode==="surface") return [earth, moon];
+  if(mode==="interior") return [...gInterior.children].filter(o=>o.isMesh);
+  if(mode==="atmosphere") return atmoShells;
+  return [];
+}
+function pick(e){
+  m2.set(e.clientX/innerWidth*2-1, -(e.clientY/innerHeight)*2+1);
+  ray.setFromCamera(m2,camera);
+  const hits=ray.intersectObjects(pickList(),false);
+  if(!hits.length) return;
+  const o=hits[0].object;
+  if(o.userData.pick==="earth") openEarth();
+  else if(o.userData.pick==="moon") openMoon();
+  else if(o.userData.layer) openLayer(o.userData.layer);
+  else if(o.userData.atmo) openAtmo(o.userData.atmo);
+}
+function tipMove(e){
+  if(drag){ tipEl.style.opacity=0; return; }
+  m2.set(e.clientX/innerWidth*2-1, -(e.clientY/innerHeight)*2+1);
+  ray.setFromCamera(m2,camera);
+  const hits=ray.intersectObjects(pickList(),false);
+  if(hits.length){ const o=hits[0].object;
+    const nm=o.userData.pick==="earth"?"Earth":o.userData.pick==="moon"?"Moon":(o.userData.layer?o.userData.layer.name:o.userData.atmo?o.userData.atmo.name:"");
+    tipEl.textContent=nm; tipEl.style.left=e.clientX+"px"; tipEl.style.top=e.clientY+"px"; tipEl.style.opacity=nm?1:0;
+    canvas.style.cursor=nm?"pointer":"grab"; }
+  else { tipEl.style.opacity=0; canvas.style.cursor="grab"; }
+}
+
+/* ------------------------------------------------------------------ info panel */
+const info=document.getElementById("info");
+function panel(title,sub,col,statRows,html){
+  info.innerHTML=`<div class="ihead"><span class="dot" style="color:${col}"></span>
+    <div class="t"><h2>${title}</h2><div class="sub">${sub}</div></div>
+    <button class="x" id="ix" aria-label="Close">✕</button></div>
+   <div class="ibody">
+     ${statRows&&statRows.length?`<div class="stats">${statRows.map(([k,v])=>`<div class="st"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`:""}
+     ${html}
+   </div>`;
+  info.classList.add("on"); document.getElementById("ix").onclick=()=>info.classList.remove("on");
+}
+const CREDIT_SURF=`<div class="credit">Textures: NASA Blue Marble / Black Marble via Solar System Scope (CC BY 4.0) and threex.planets (MIT). Day/night, seasons and the terminator are computed from Earth's real 23.44° tilt. The daily spin is illustrative; Moon distance is not to scale.</div>`;
+function openEarth(){ panel(EARTH.name,"Season (N): "+season+" · Sun overhead at "+subLat.toFixed(1)+"° lat","#49c6ff",EARTH.stats,
+  `<p>${EARTH.comp}</p><ul class="facts">${EARTH.facts.map(f=>`<li>${f}</li>`).join("")}</ul>${CREDIT_SURF}`); }
+function openMoon(){ panel(MOON.name,MOON.type,"#cfd3da",MOON.stats,
+  `<ul class="facts">${MOON.facts.map(f=>`<li>${f}</li>`).join("")}</ul>${CREDIT_SURF}`); }
+function openLayer(L){ panel(L.name,"Interior · "+L.state,L.col,
+  [["Depth",L.depth],["Thickness",L.thick],["Temperature",L.temp],["State",L.state]],
+  `<p><b>Made of:</b> ${L.comp}</p><ul class="facts">${L.facts.map(f=>`<li>${f}</li>`).join("")}</ul>
+   <div class="credit">Depths and temperatures from USGS and the Preliminary Reference Earth Model (PREM). Shell sizes are drawn to true scale.</div>`);
+  highlightLegend(L.k); }
+function openAtmo(A){ panel(A.name,"Atmosphere layer","#"+A.col.slice(1),
+  [["Begins at",A.base],["Reaches","up to "+A.top]],
+  `<ul class="facts">${A.facts.map(f=>`<li>${f}</li>`).join("")}</ul>
+   <div class="credit">Altitudes from NOAA / UCAR; boundaries vary with latitude and season. Layer thicknesses here are exaggerated so the thin lower layers stay visible.</div>`);
+  highlightLegend(A.k); }
+
+/* ------------------------------------------------------------------ legend (interior / atmosphere) */
+const legend=document.getElementById("legend");
+function buildLegend(){
+  if(mode==="interior"){
+    legend.innerHTML=`<div class="lt">Inside the Earth</div>`+LAYERS.map(L=>
+      `<div class="lrow" data-k="${L.k}"><i style="color:${L.col}"></i><div><div>${L.name}</div><div class="lr-sub">${L.depth}</div></div></div>`).join("");
+    legend.querySelectorAll(".lrow").forEach(r=>r.onclick=()=>openLayer(LAYERS.find(L=>L.k===r.dataset.k)));
+    legend.classList.remove("hide");
+  } else if(mode==="atmosphere"){
+    legend.innerHTML=`<div class="lt">Layers of the air</div>`+[...ATMO].reverse().map(A=>
+      `<div class="lrow" data-k="${A.k}"><i style="color:${A.col}"></i><div><div>${A.name}</div><div class="lr-sub">${A.base} – ${A.top}</div></div></div>`).join("");
+    legend.querySelectorAll(".lrow").forEach(r=>r.onclick=()=>openAtmo(ATMO.find(A=>A.k===r.dataset.k)));
+    legend.classList.remove("hide");
+  } else legend.classList.add("hide");
+}
+function highlightLegend(k){ legend.querySelectorAll(".lrow").forEach(r=>r.style.background=r.dataset.k===k?"rgba(255,255,255,.1)":""); }
+
+/* ------------------------------------------------------------------ modes */
+let mode="surface";
+const MODES=[["surface","Surface"],["interior","Interior"],["atmosphere","Atmosphere"]];
+const modesEl=document.getElementById("modes");
+MODES.forEach(([k,name])=>{ const b=document.createElement("button"); b.className="mchip"+(k==="surface"?" on":"");
+  b.dataset.k=k; b.textContent=name; b.onclick=()=>setMode(k); modesEl.appendChild(b); });
+let showClouds=true, showNight=true, showPlates=false, showAxis=false, showMoon=true;
+function applyVis(){
+  const surf=mode==="surface";
+  obliq.visible = surf;                        // the day/night Earth + its extras
+  clouds.visible = surf && showClouds;
+  atmoGlow.visible = surf;
+  plates.visible = surf && showPlates;
+  axisGroup.visible = surf && showAxis;
+  moonOrbit.visible = surf && showMoon;
+  gInterior.visible = mode==="interior";
+  gAtmo.visible = mode==="atmosphere";
+  headLight.visible = mode!=="surface";
+}
+function setMode(k){
+  mode=k; info.classList.remove("on");
+  modesEl.querySelectorAll(".mchip").forEach(c=>c.classList.toggle("on",c.dataset.k===k));
+  // reframe camera
+  if(k==="atmosphere"){ tR=46; } else if(k==="interior"){ tR=26; } else { tR=30; }
+  buildToggles(); buildLegend(); applyVis();
+}
+
+/* ------------------------------------------------------------------ toggles (context-sensitive) */
+const togEl=document.getElementById("toggles");
+function buildToggles(){
+  if(mode!=="surface"){ togEl.innerHTML=""; return; }
+  const defs=[["clouds","Clouds",()=>showClouds,v=>showClouds=v],
+    ["night","City lights",()=>showNight,v=>{showNight=v; earthUniforms.uNight.value=v?1:0;}],
+    ["plates","Plates",()=>showPlates,v=>showPlates=v],
+    ["axis","Axis",()=>showAxis,v=>showAxis=v],
+    ["moon","Moon",()=>showMoon,v=>showMoon=v]];
+  togEl.innerHTML="";
+  for(const [k,label,get,set] of defs){
+    const b=document.createElement("button"); b.textContent=label; b.className=get()?"active":"";
+    b.onclick=()=>{ set(!get()); b.classList.toggle("active",get()); applyVis(); };
+    togEl.appendChild(b);
+  }
+}
+buildToggles();
+
+/* ------------------------------------------------------------------ dock controls */
+document.getElementById("play").onclick=function(){ playing=!playing; this.textContent=playing?"⏸":"▶"; };
+document.getElementById("now").onclick=()=>{ offsetDays=0; timeEl.value=0; updateSun(); };
+timeEl.addEventListener("input",()=>{ offsetDays=+timeEl.value; updateSun(); });
+document.querySelectorAll("#speeds button").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll("#speeds button").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); rate=+btn.dataset.sp; });
+
+/* ------------------------------------------------------------------ loop */
+function hideLoader(){ const l=document.getElementById("load"); if(!l)return; l.classList.add("gone"); setTimeout(()=>l.remove(),600);
+  setTimeout(()=>{const h=document.getElementById("help"); if(h) h.classList.add("gone");},9000); }
+setTimeout(hideLoader,5000);
+
+const _v=new THREE.Vector3();
+function updateLabels(){
+  for(const L of labels){
+    if(!L.show()){ L.el.style.display="none"; continue; }
+    _v.copy(L.pos); L.grp.localToWorld(_v); _v.project(camera);
+    if(_v.z>1){ L.el.style.display="none"; continue; }
+    L.el.style.display=""; L.el.style.left=(_v.x*0.5+0.5)*innerWidth+"px"; L.el.style.top=(-_v.y*0.5+0.5)*innerHeight+"px";
+  }
+}
+let last=performance.now();
+function tick(now){
+  const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now;
+  if(playing){ offsetDays+=rate*dt;
+    if(offsetDays>3652)offsetDays=3652; if(offsetDays<-3652)offsetDays=-3652;
+    timeEl.value=offsetDays;
+    rateEl.textContent = rate>=30?"1 month/s": rate>=10?"10 days/s": rate>=1?"1 day/s":"1 hour/s";
+  }
+  if(mode==="surface") clouds.rotation.y+=dt*0.006;
+  if(mode==="atmosphere") karman.quaternion.copy(camera.quaternion);   // keep the edge-of-space ring facing the camera
+  updateSun(); applyCam(); updateLabels();
+  renderer.render(scene,camera);
+  requestAnimationFrame(tick);
+}
+rateEl.textContent="1 day/s";
+updateSun(); applyVis(); buildLegend();
+requestAnimationFrame(tick);
+addEventListener("resize",()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+// expose a tiny hook for automated checks (same convention as the other Atlas pages)
+window.__earth={get mode(){return mode;}, setMode, get pending(){return pending;}, openEarth};
+</script>
+</body>
+</html>

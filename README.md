@@ -14,6 +14,7 @@
 | 🦴 | **Human Family Tree** | Meet our ancestors and extinct cousins, from *Sahelanthropus* to *Homo sapiens*, as life‑lines on a tree of deep time. |
 | 🗺️ | **Countries Atlas** | Every country on an interactive world map (Robinson projection): search and filter them, read their size, people and cities, and drag a yearly timeline to see the weather change. |
 | 🪐 | **Solar System** | A real‑time 3D Solar System. Planets sit at their true positions for any date — from NASA/JPL orbital elements — with real sizes, tilts and orbits. Click one to learn about it. |
+| ◍ | **Earth** | A living 3D Earth: city lights on the night side, drifting clouds and the seasons set by its real 23.44° tilt. Slice it open to a to‑scale cutaway of the crust, mantle and core, or peel back the layered atmosphere — and flip on the tectonic plates. |
 
 ### Running it
 
@@ -26,7 +27,8 @@ python -m http.server 8799
 
 ### Built with, and thanks to
 
-- **three.js** (MIT) for the 3D Solar System — planet, ring and moon textures from **threex.planets** by Jérôme Etienne (MIT, derived from NASA imagery), with positions from **JPL** Keplerian orbital elements.
+- **three.js** (MIT) for the 3D **Solar System** and **Earth** — planet, ring and moon textures from **threex.planets** by Jérôme Etienne (MIT, derived from NASA imagery), with planet positions from **JPL** Keplerian orbital elements.
+- The **Earth** page's day and night (city‑lights) and cloud maps are NASA Blue Marble / Black Marble imagery via **[Solar System Scope](https://www.solarsystemscope.com/textures/)** (CC BY 4.0). Interior depths and temperatures follow **USGS** and the Preliminary Reference Earth Model (PREM); atmosphere altitudes follow **NOAA / UCAR**; tectonic‑plate boundaries are the PB2002 model (Peter Bird) via **[fraxen/tectonicplates](https://github.com/fraxen/tectonicplates)**. Day/night, the seasons and the terminator are computed from Earth's real axial tilt.
 - **Countries** data from [mledoze/countries](https://github.com/mledoze/countries), the **World Bank** (populations), **GeoNames** (cities & elevation) and **Natural Earth / world‑atlas** (map geometry). Weather figures are a clearly‑labelled climate *model*, not forecasts.
 
 Each topic page also opens on its own, straight from its file.

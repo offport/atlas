@@ -429,8 +429,9 @@ function updateSun(){
   subLat=Math.asin(Math.sin(EPS*d2r)*Math.sin(lam))/d2r;
   const m=date.getUTCMonth();
   season=["Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Autumn","Autumn","Autumn","Winter"][m];
-  // daily spin (illustrative): one turn per day, plus a slow season drift already in sun
-  spin.rotation.y=2*Math.PI*((offsetDays%1)+ (date.getUTCHours()/24));
+  // daily spin (illustrative): one smooth turn per day — a single continuous function of time,
+  // so changing the clock speed never makes it jump (no stepped per-hour term)
+  spin.rotation.y=2*Math.PI*offsetDays;
   // moon orbit (phase emerges from lighting); keep roughly in ecliptic
   const ma=2*Math.PI*(offsetDays/27.32);
   moon.position.set(Math.cos(ma)*MOON_DIST,0,Math.sin(ma)*MOON_DIST);

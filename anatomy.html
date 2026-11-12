@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anatomy</title>
+<style>
+/* An interactive 3D human anatomy atlas (Three.js + glTF). Browse the skeleton and the muscles,
+   hover to name any structure, and focus a single bone or muscle to spin it 360°.
+   Meshes: Z-Anatomy (CC BY-SA 4.0), derived from BodyParts3D (CC BY-SA 2.1 Japan). */
+:root{
+  --ink:#eef2fb; --muted:#90a0bd; --panel:rgba(14,18,28,.86); --rule:rgba(120,140,185,.22);
+  --accent:#5ec8ff; --accent2:#ff6f7d; --bone:#e9e3d2; --muscle:#c9585b;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#070910;color:var(--ink);font-family:var(--font);overflow:hidden}
+canvas{display:block;position:fixed;inset:0;touch-action:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.glass{background:var(--panel);border:1px solid var(--rule);border-radius:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+
+/* top bar */
+#top{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:12px;padding:8px 12px;z-index:10;pointer-events:none}
+#top>*{pointer-events:auto}
+#top h1{font-size:15px;margin:0;font-weight:800;letter-spacing:.02em;white-space:nowrap;display:flex;align-items:center;gap:7px}
+#top h1 .d{color:var(--accent)}
+#sys{display:flex;gap:6px}
+.schip{flex:none;display:flex;align-items:center;gap:7px;border:1px solid var(--rule);background:rgba(255,255,255,.04);border-radius:999px;padding:5px 14px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.schip:hover{background:rgba(255,255,255,.1)}
+.schip.on{background:var(--ink);color:#0a1018;border-color:var(--ink);font-weight:700}
+.schip i{width:10px;height:10px;border-radius:3px;display:block}
+
+/* left browser panel */
+#browse{position:fixed;left:12px;top:58px;bottom:12px;width:272px;z-index:9;display:flex;flex-direction:column;padding:10px;gap:8px}
+#browse.hide{display:none}
+#search{width:100%;border:1px solid var(--rule);background:rgba(255,255,255,.05);border-radius:9px;padding:9px 11px;font-size:13px}
+#count{font-size:11px;color:var(--muted);padding:0 2px}
+#list{flex:1;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column;gap:2px}
+.row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;line-height:1.2}
+.row:hover{background:rgba(255,255,255,.08)}
+.row.on{background:var(--accent);color:#06121e;font-weight:700}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sd{font-size:10px;color:var(--muted);flex:none}
+.row.on .sd{color:#06121e}
+
+/* info panel */
+#info{position:fixed;top:58px;right:12px;width:316px;max-width:calc(100vw - 24px);z-index:11;padding:0;transform:translateX(118%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+#info.on{transform:none}
+@media(prefers-reduced-motion:reduce){#info{transition:none}}
+.ihead{display:flex;align-items:flex-start;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--rule)}
+.ihead .dot{width:12px;height:12px;border-radius:3px;flex:none;margin-top:5px}
+.ihead .t{flex:1;min-width:0}
+.ihead h2{margin:0;font-size:17px;font-weight:800;line-height:1.2}
+.ihead .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.ihead .x{border:1px solid var(--rule);background:transparent;border-radius:999px;width:30px;height:30px;font-size:15px;cursor:pointer;flex:none}
+.ibody{padding:12px 16px 16px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.st{background:rgba(255,255,255,.04);border:1px solid var(--rule);border-radius:9px;padding:7px 9px}
+.st .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.st .v{font-size:13.5px;font-weight:700;margin-top:1px}
+#focusBtn{width:100%;border:1px solid var(--accent);background:var(--accent);color:#06121e;font-weight:800;border-radius:10px;padding:11px;font-size:13.5px;cursor:pointer}
+#focusBtn:hover{filter:brightness(1.08)}
+.ilink{display:inline-block;margin-top:10px;font-size:12px;color:var(--accent);text-decoration:none}
+.ilink:hover{text-decoration:underline}
+.credit{font-size:10px;color:var(--muted);margin-top:12px;line-height:1.5;border-top:1px solid var(--rule);padding-top:8px}
+
+/* bottom dock */
+#dock{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:10;display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+#dock button{border:1px solid var(--rule);background:rgba(255,255,255,.05);border-radius:9px;padding:8px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+#dock button:hover{background:rgba(255,255,255,.12)}
+#dock button.active{background:var(--accent2);color:#1a0a0d;border-color:var(--accent2);font-weight:700}
+#exitFocus{background:var(--accent);color:#06121e;border-color:var(--accent);font-weight:800;display:none}
+
+/* focus banner */
+#fbar{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:9;padding:8px 16px;font-size:14px;font-weight:700;display:none;align-items:center;gap:10px}
+#fbar .fs{font-size:11px;color:var(--muted);font-weight:500}
+
+#tip{position:fixed;pointer-events:none;z-index:12;background:rgba(8,12,22,.94);border:1px solid var(--rule);border-radius:7px;padding:3px 9px;font-size:12px;opacity:0;transform:translate(-50%,-160%);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+#load{position:fixed;inset:0;display:grid;place-items:center;z-index:30;background:#070910;transition:opacity .5s}
+#load.gone{opacity:0;pointer-events:none}
+#load .l{text-align:center;width:min(280px,70vw)}
+#load .ring{width:46px;height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin 1s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#load .t{font-size:12.5px;color:var(--muted);letter-spacing:.04em}
+#help{position:fixed;right:12px;bottom:64px;z-index:9;font-size:11.5px;color:var(--muted);max-width:230px;line-height:1.5;padding:9px 12px;transition:opacity .4s}
+#help.gone{opacity:0;pointer-events:none}
+@media (max-width:820px){
+  #browse{display:none}
+  #info{top:auto;bottom:62px;right:12px;left:12px;width:auto;max-height:46vh;overflow-y:auto;transform:translateY(130%)}
+  #info.on{transform:none}
+  #help{display:none}
+  #top h1 .full{display:none}
+}
+</style>
+<script type="importmap">
+{ "imports": { "three": "./anatomy-assets/vendor/three/three.module.js", "three/addons/": "./anatomy-assets/vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<div id="load"><div class="l"><div class="ring"></div><div class="t" id="loadt">LOADING THE ATLAS…</div></div></div>
+
+<div id="top">
+  <h1><span class="d">✚</span> <span class="full">Human&nbsp;</span>Anatomy</h1>
+  <div id="sys"></div>
+</div>
+
+<div id="browse" class="glass">
+  <input id="search" type="search" placeholder="Search bones & muscles…" autocomplete="off">
+  <div id="count"></div>
+  <div id="list"></div>
+</div>
+
+<aside id="info" class="glass"></aside>
+
+<div id="fbar" class="glass"><span id="fname"></span><span class="fs" id="fside"></span></div>
+
+<div id="dock" class="glass">
+  <button id="reset">Reset view</button>
+  <button id="rotate">Auto-rotate</button>
+  <button id="conn">Ligaments</button>
+  <button id="exitFocus">← Back to full view</button>
+</div>
+
+<div id="help" class="glass">Drag to rotate · scroll to zoom · right-drag to pan. Hover a part to name it, click to select, then <b>View alone</b> to spin it 360°.</div>
+<div id="tip"></div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+
+const A="./anatomy-assets/";
+const SYSTEMS=[["skeleton","Skeleton","#e9e3d2"],["muscles","Muscles","#d66"]];
+
+/* ---------------------------------------------------------------- renderer / scene */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x070910);
+const camera=new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.01, 100);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+const canvas=renderer.domElement;
+
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08;
+controls.rotateSpeed=.9; controls.minDistance=.05; controls.maxDistance=12;
+controls.autoRotateSpeed=2.2;
+
+// lighting — soft studio setup
+scene.add(new THREE.HemisphereLight(0xcfe0ff,0x161820,0.75));
+const key=new THREE.DirectionalLight(0xffffff,1.5); key.position.set(1.2,2.0,2.2); scene.add(key);
+const fill=new THREE.DirectionalLight(0xbcd0ff,0.7); fill.position.set(-2,1,-1.5); scene.add(fill);
+const rim=new THREE.DirectionalLight(0xffffff,0.5); rim.position.set(0,1.5,-3); scene.add(rim);
+
+// materials (shared by kind)
+const matBone=new THREE.MeshStandardMaterial({color:0xe9e3d2,roughness:.72,metalness:.02});
+const matMuscle=new THREE.MeshStandardMaterial({color:0xc9585b,roughness:.55,metalness:0});
+const matConn=new THREE.MeshStandardMaterial({color:0xcbb98f,roughness:.7,metalness:0,transparent:true,opacity:.55});
+const matHover=new THREE.MeshStandardMaterial({color:0x8fe3ff,emissive:0x1b3a4a,roughness:.5});
+const matSelect=new THREE.MeshStandardMaterial({color:0x5ec8ff,emissive:0x16425e,roughness:.45,metalness:.1});
+function baseMat(kind){ return kind==="bone"?matBone:kind==="connective"?matConn:matMuscle; }
+
+const gSkeleton=new THREE.Group(), gMuscles=new THREE.Group();
+scene.add(gSkeleton,gMuscles);
+
+/* ---------------------------------------------------------------- load glTF */
+const structures=[];            // {key,info,system,meshes:[],node,center,radius}
+const byMesh=new Map();         // mesh -> structure
+let modelBox=new THREE.Box3(), modelCenter=new THREE.Vector3();
+
+function originalName(o){ for(let n=o;n;n=n.parent) if(n.userData&&n.userData.name) return n.userData.name; return o.name; }
+
+async function load(){
+  const index=await (await fetch(A+"index.json")).json();
+  window.__anatomyIndex=index;
+  const loader=new GLTFLoader();
+  const draco=new DRACOLoader(); draco.setDecoderPath(A+"vendor/three/addons/libs/draco/gltf/"); loader.setDRACOLoader(draco);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  const files=index.files||["skeletal.glb","muscular.glb"];
+  const loadt=document.getElementById("loadt");
+  // map node -> structure record so multi-primitive nodes are one structure
+  const nodeRec=new Map();
+  for(let i=0;i<files.length;i++){
+    const f=files[i]; loadt.textContent=`LOADING ${f.replace(".glb","").toUpperCase()}…`;
+    const gltf=await loader.loadAsync(A+f);
+    const meshes=[]; gltf.scene.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+    for(const mesh of meshes){
+      const key=originalName(mesh); const info=index.meshes[key];
+      if(!info){ mesh.visible=false; continue; }
+      mesh.material=baseMat(info.kind);
+      mesh.userData.base=mesh.material;
+      // find the structure "node" (ancestor carrying the name) to group multi-primitive parts
+      let node=mesh; for(let n=mesh;n;n=n.parent){ if(n.userData&&n.userData.name){ node=n; break; } }
+      let rec=nodeRec.get(node);
+      if(!rec){ rec={key,info,system:info.layer==="skeleton"?"skeleton":"muscles",meshes:[],node}; nodeRec.set(node,rec); structures.push(rec); }
+      rec.meshes.push(mesh); byMesh.set(mesh,rec);
+    }
+    (f.includes("skel")?gSkeleton:gMuscles).add(gltf.scene);
+    document.querySelector("#load .t").textContent=`${f} ready`;
+  }
+  gSkeleton.updateMatrixWorld(true); gMuscles.updateMatrixWorld(true);
+  // per-structure bounds (world space, after matrices are updated)
+  const b=new THREE.Box3();
+  for(const s of structures){
+    b.makeEmpty();
+    for(const m of s.meshes) b.expandByObject(m);
+    s.center=b.getCenter(new THREE.Vector3()); s.radius=Math.max(b.getSize(new THREE.Vector3()).length()/2,0.01);
+  }
+  modelBox.setFromObject(gSkeleton); modelBox.getCenter(modelCenter);
+  finishLoad();
+}
+
+/* ---------------------------------------------------------------- state + helpers */
+let system="skeleton", selected=null, hovered=null, focusMode=false, showConn=false;
+
+function setStructureMat(s,mat){ for(const m of s.meshes) m.material=mat; }
+function restoreMat(s){ for(const m of s.meshes) m.material=m.userData.base; }
+function visibleInSystem(s){ if(s.system!==system) return false; if(s.info.kind==="connective"&&!showConn) return false; return true; }
+
+function applySystem(){
+  gSkeleton.visible = system==="skeleton";
+  gMuscles.visible = system==="muscles";
+  for(const s of structures){ const v=visibleInSystem(s); for(const m of s.meshes) m.visible=v; }
+  document.querySelectorAll("#sys .schip").forEach(c=>c.classList.toggle("on",c.dataset.k===system));
+  document.getElementById("conn").style.display = system==="muscles" ? "" : "none";
+  buildList();
+}
+
+/* ---------------------------------------------------------------- camera framing */
+const _b=new THREE.Box3(), _c=new THREE.Vector3(), _s=new THREE.Vector3();
+function frame(target, radius, keepAngle){
+  const dist=radius/Math.sin(THREE.MathUtils.degToRad(camera.fov*0.5))*1.15;
+  controls.target.copy(target);
+  const dir=keepAngle? camera.position.clone().sub(controls.target).normalize() : new THREE.Vector3(0,0,1);
+  if(!keepAngle){ dir.set(0.15,0.05,1).normalize(); }
+  camera.position.copy(target).add(dir.multiplyScalar(dist));
+  controls.minDistance=radius*0.25; controls.maxDistance=radius*14;
+  controls.update();
+}
+function frameAll(){ _b.setFromObject(system==="skeleton"?gSkeleton:gMuscles); _b.getCenter(_c); const r=_b.getSize(_s).length()/2; frame(_c,r,false); }
+
+/* ---------------------------------------------------------------- selection + focus */
+const info=document.getElementById("info");
+function labelClean(l){ let s=l||""; const open=(s.match(/\(/g)||[]).length, close=(s.match(/\)/g)||[]).length; if(open>close) s+=")".repeat(open-close); return s; }
+function sideWord(sd){ return sd==="L"?"Left":sd==="R"?"Right":"Midline / unpaired"; }
+function kindWord(k){ return k==="bone"?"Bone / cartilage":k==="connective"?"Ligament / connective":"Muscle"; }
+
+function select(s, fromList){
+  if(selected && selected!==s) restoreMat(selected);
+  selected=s;
+  for(const st of structures){ if(st!==s && st!==hovered) restoreMat(st); }
+  setStructureMat(s,matSelect);
+  const name=labelClean(s.info.label);
+  const q=encodeURIComponent(s.info.label.replace(/\.(l|r)$/,""));
+  info.innerHTML=`<div class="ihead"><span class="dot" style="background:${s.info.kind==='bone'?'var(--bone)':s.info.kind==='connective'?'#cbb98f':'var(--muscle)'}"></span>
+    <div class="t"><h2>${name}</h2><div class="sub">${kindWord(s.info.kind)} · ${system==='skeleton'?'Skeletal system':'Muscular system'}</div></div>
+    <button class="x" id="ix" aria-label="Close">✕</button></div>
+   <div class="ibody">
+     <div class="stats">
+       <div class="st"><div class="k">Side</div><div class="v">${sideWord(s.info.side)}</div></div>
+       <div class="st"><div class="k">Type</div><div class="v">${kindWord(s.info.kind)}</div></div>
+     </div>
+     <button id="focusBtn">◉ View alone · spin 360°</button>
+     <a class="ilink" href="https://en.wikipedia.org/wiki/Special:Search?search=${q}" target="_blank" rel="noopener">Look up “${name}” on Wikipedia ↗</a>
+     <div class="credit">Meshes: Z-Anatomy (CC BY-SA 4.0), derived from BodyParts3D (CC BY-SA 2.1 Japan). Names follow Terminologia Anatomica.</div>
+   </div>`;
+  info.classList.add("on");
+  document.getElementById("ix").onclick=()=>{ info.classList.remove("on"); deselect(); };
+  document.getElementById("focusBtn").onclick=()=>enterFocus(s);
+  // list sync
+  document.querySelectorAll("#list .row").forEach(r=>r.classList.toggle("on", r.dataset.key===s.key+"#"+s.center.x.toFixed(4)));
+  if(fromList) frame(s.center.clone(), s.radius, true);
+}
+function deselect(){ if(selected){ restoreMat(selected); selected=null; } document.querySelectorAll("#list .row.on").forEach(r=>r.classList.remove("on")); }
+
+const fbar=document.getElementById("fbar"), exitBtn=document.getElementById("exitFocus");
+function enterFocus(s){
+  focusMode=true; info.classList.remove("on");
+  for(const st of structures){ const v=(st===s); for(const m of st.meshes) m.visible=v; }
+  setStructureMat(s,s.info.kind==="bone"?matBone:s.info.kind==="connective"?matConn:matMuscle); // show its true colour alone
+  frame(s.center.clone(), s.radius, false);
+  controls.autoRotate=true; document.getElementById("rotate").classList.add("active");
+  fbar.style.display="flex"; document.getElementById("fname").textContent=labelClean(s.info.label);
+  document.getElementById("fside").textContent=s.info.side==="L"?"left":s.info.side==="R"?"right":"";
+  exitBtn.style.display="inline-block"; document.getElementById("browse").classList.add("hide");
+}
+function exitFocus(){
+  focusMode=false; controls.autoRotate=false; document.getElementById("rotate").classList.remove("active");
+  fbar.style.display="none"; exitBtn.style.display="none";
+  document.getElementById("browse").classList.remove("hide");
+  applySystem(); if(selected){ setStructureMat(selected,matSelect); info.classList.add("on"); }
+  frameAll();
+}
+exitBtn.onclick=exitFocus;
+
+/* ---------------------------------------------------------------- picking */
+const ray=new THREE.Raycaster(), m2=new THREE.Vector2(), tip=document.getElementById("tip");
+let pointer={x:0,y:0,on:false}, needPick=false;
+function pickAt(cx,cy){
+  m2.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1);
+  ray.setFromCamera(m2,camera);
+  const pool=[]; const g=system==="skeleton"?gSkeleton:gMuscles;
+  const hits=ray.intersectObject(g,true);
+  for(const h of hits){ const s=byMesh.get(h.object); if(s && visibleInSystem(s)) return {s,point:h.point}; }
+  return null;
+}
+canvas.addEventListener("pointermove",e=>{ pointer.x=e.clientX; pointer.y=e.clientY; pointer.on=true; needPick=true; });
+canvas.addEventListener("pointerleave",()=>{ pointer.on=false; if(hovered&&hovered!==selected) restoreMat(hovered); hovered=null; tip.style.opacity=0; });
+let down=null;
+canvas.addEventListener("pointerdown",e=>{ down={x:e.clientX,y:e.clientY,t:performance.now()}; });
+canvas.addEventListener("pointerup",e=>{ if(!down) return; const moved=Math.abs(e.clientX-down.x)+Math.abs(e.clientY-down.y);
+  if(moved<5 && !focusMode){ const r=pickAt(e.clientX,e.clientY); if(r){ select(r.s,false); } else { info.classList.remove("on"); deselect(); } } down=null; });
+canvas.addEventListener("dblclick",e=>{ if(focusMode) return; const r=pickAt(e.clientX,e.clientY); if(r) enterFocus(r.s); });
+
+function doHover(){
+  needPick=false; if(!pointer.on||focusMode){ return; }
+  const r=pickAt(pointer.x,pointer.y);
+  const s=r?r.s:null;
+  if(s!==hovered){
+    if(hovered&&hovered!==selected) restoreMat(hovered);
+    hovered=s;
+    if(s&&s!==selected) setStructureMat(s,matHover);
+  }
+  if(s){ tip.textContent=labelClean(s.info.label)+(s.info.side==="L"?" (L)":s.info.side==="R"?" (R)":"");
+    tip.style.left=pointer.x+"px"; tip.style.top=pointer.y+"px"; tip.style.opacity=1; canvas.style.cursor="pointer"; }
+  else { tip.style.opacity=0; canvas.style.cursor="grab"; }
+}
+
+/* ---------------------------------------------------------------- browser list */
+const listEl=document.getElementById("list"), searchEl=document.getElementById("search"), countEl=document.getElementById("count");
+function currentList(){
+  const q=searchEl.value.trim().toLowerCase();
+  let items=structures.filter(visibleInSystem);
+  // de-dup L/R into one row per label, keep both structures
+  const byLabel=new Map();
+  for(const s of items){ const L=s.info.label.replace(/\.(l|r)$/,""); if(!byLabel.has(L)) byLabel.set(L,[]); byLabel.get(L).push(s); }
+  let rows=[...byLabel.entries()].map(([label,ss])=>({label,ss}));
+  if(q) rows=rows.filter(r=>r.label.toLowerCase().includes(q));
+  rows.sort((a,b)=>a.label.localeCompare(b.label));
+  return rows;
+}
+function buildList(){
+  const rows=currentList();
+  countEl.textContent=`${rows.length} structures${searchEl.value?" matching":""}`;
+  listEl.innerHTML="";
+  const frag=document.createDocumentFragment();
+  for(const r of rows.slice(0,600)){
+    const el=document.createElement("div"); el.className="row";
+    const sides=r.ss.map(s=>s.info.side).filter(x=>x==="L"||x==="R");
+    el.innerHTML=`<span class="nm">${labelClean(r.label)}</span>${sides.length? `<span class="sd">${[...new Set(sides)].join("·")}</span>`:""}`;
+    el.onclick=()=>{ const s=r.ss[0]; select(s,true); };
+    frag.appendChild(el);
+  }
+  listEl.appendChild(frag);
+}
+searchEl.addEventListener("input",buildList);
+
+/* ---------------------------------------------------------------- system chips + dock */
+const sysEl=document.getElementById("sys");
+for(const [k,name,col] of SYSTEMS){ const b=document.createElement("button"); b.className="schip"+(k==="skeleton"?" on":"");
+  b.dataset.k=k; b.innerHTML=`<i style="background:${col}"></i>${name}`;
+  b.onclick=()=>{ if(system===k) return; system=k; if(focusMode) exitFocus(); deselect(); info.classList.remove("on"); applySystem(); frameAll(); searchEl.value=""; buildList(); };
+  sysEl.appendChild(b); }
+document.getElementById("reset").onclick=()=>{ if(focusMode) exitFocus(); else frameAll(); };
+document.getElementById("rotate").onclick=function(){ controls.autoRotate=!controls.autoRotate; this.classList.toggle("active",controls.autoRotate); };
+document.getElementById("conn").onclick=function(){ showConn=!showConn; this.classList.toggle("active",showConn); applySystem(); };
+
+/* ---------------------------------------------------------------- loop */
+function finishLoad(){
+  applySystem(); frameAll();
+  const l=document.getElementById("load"); l.classList.add("gone"); setTimeout(()=>l.remove(),600);
+  setTimeout(()=>{const h=document.getElementById("help"); if(h) h.classList.add("gone");},11000);
+  window.__anatomy={ get system(){return system;}, setSystem(k){ system=k; applySystem(); frameAll(); },
+    get count(){return structures.length;}, focusFirst(){ enterFocus(structures.find(visibleInSystem)); },
+    select:(label)=>{ const s=structures.find(x=>visibleInSystem(x)&&x.info.label.toLowerCase().includes(label.toLowerCase())); if(s) select(s,true); return s?s.info.label:null; } };
+}
+function tick(){ if(needPick) doHover(); controls.update(); renderer.render(scene,camera); requestAnimationFrame(tick); }
+addEventListener("resize",()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+tick();
+load().catch(e=>{ document.getElementById("loadt").textContent="Could not load the anatomy data."; console.error(e); });
+</script>
+</body>
+</html>

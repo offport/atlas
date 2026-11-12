@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Atlas">
+  <defs>
+    <linearGradient id="atlasG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b9dff"/>
+      <stop offset="1" stop-color="#8b7bff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#atlasG)"/>
+  <!-- globe -->
+  <g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round">
+    <circle cx="29" cy="36" r="13.5"/>
+    <ellipse cx="29" cy="36" rx="5.4" ry="13.5"/>
+    <ellipse cx="29" cy="36" rx="13.5" ry="5.2"/>
+  </g>
+  <!-- cosmic star (the topics that reach beyond Earth) -->
+  <path d="M48 12 l1.9 5.2 5.2 1.9 -5.2 1.9 -1.9 5.2 -1.9 -5.2 -5.2 -1.9 5.2 -1.9 Z" fill="#fff"/>
+</svg>

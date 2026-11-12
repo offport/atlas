@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-label="Atlas — a small library of things worth understanding">
+  <defs>
+    <linearGradient id="atlasG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b9dff"/>
+      <stop offset="1" stop-color="#8b7bff"/>
+    </linearGradient>
+  </defs>
+  <!-- mark -->
+  <g transform="translate(16,28)">
+    <rect width="64" height="64" rx="15" fill="url(#atlasG)"/>
+    <g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round">
+      <circle cx="29" cy="36" r="13.5"/>
+      <ellipse cx="29" cy="36" rx="5.4" ry="13.5"/>
+      <ellipse cx="29" cy="36" rx="13.5" ry="5.2"/>
+    </g>
+    <path d="M48 12 l1.9 5.2 5.2 1.9 -5.2 1.9 -1.9 5.2 -1.9 -5.2 -5.2 -1.9 5.2 -1.9 Z" fill="#fff"/>
+  </g>
+  <!-- wordmark -->
+  <text x="98" y="63" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"
+        font-size="44" font-weight="800" letter-spacing="-.5" fill="#1b2130">Atlas</text>
+  <text x="100" y="86" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"
+        font-size="13.5" font-weight="500" letter-spacing=".2" fill="#6b7589">a small library of things worth understanding</text>
+</svg>

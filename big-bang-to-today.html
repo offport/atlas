@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big Bang to Today</title>
+<style>
+/* Layout: one screen. A log-scale time rail on the left (13.8 billion years to now), a scrolling
+   list of events on the right grouped by era; the header reads out where you are. */
+:root{
+  --bg:#eef1ee; --panel:#ffffff; --ink:#1c2925; --muted:#62706b; --rule:#d5dcd7; --now:#d6453d;
+  --cosmos:#3f4aa8; --life:#2f8a66; --humans:#a23e6a; --faith:#a8761a; --empires:#8a5a3c; --wars:#c8402f; --tech:#1d7fb8; --arab:#7a4fc0;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141a18; --panel:#1e2623; --ink:#e8eeea; --muted:#9aa8a2; --rule:#2f3a36; --now:#ff6b61;
+    --cosmos:#8e98ee; --life:#55b98f; --humans:#d9709c; --faith:#dba63f; --empires:#c79670; --wars:#f0705f; --tech:#5cb4e6; --arab:#b093ee;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141a18; --panel:#1e2623; --ink:#e8eeea; --muted:#9aa8a2; --rule:#2f3a36; --now:#ff6b61;
+  --cosmos:#8e98ee; --life:#55b98f; --humans:#d9709c; --faith:#dba63f; --empires:#c79670; --wars:#f0705f; --tech:#5cb4e6; --arab:#b093ee;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--now);outline-offset:2px}
+
+header{flex:none;background:var(--panel);border-bottom:1px solid var(--rule);padding:10px 14px 8px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;max-width:760px;margin:0 auto}
+h1{font-size:15px;margin:0;font-weight:700}
+#when{font-size:14px;font-weight:700;color:var(--now);text-align:right;font-variant-numeric:tabular-nums}
+#era{font-size:12px;color:var(--muted);max-width:760px;margin:2px auto 0;text-align:right}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:760px;margin:8px auto 0;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--rule);background:transparent;border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c);display:block}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+#wrap{flex:1;min-height:0;display:flex;max-width:760px;width:100%;margin:0 auto}
+#rail{flex:none;width:58px;position:relative;border-right:1px solid var(--rule);cursor:pointer;touch-action:none}
+#rail .tk{position:absolute;right:0;width:8px;border-top:1px solid var(--muted)}
+#rail .tl{position:absolute;right:12px;font-size:10.5px;color:var(--muted);transform:translateY(-50%);white-space:nowrap;font-variant-numeric:tabular-nums}
+#rail .dot{position:absolute;right:-3px;width:5px;height:5px;border-radius:50%;background:var(--c);transform:translateY(-50%);opacity:.75}
+#mark{position:absolute;left:0;right:-1px;height:0;border-top:2px solid var(--now);transition:top .15s linear}
+#mark::after{content:"";position:absolute;right:-5px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--now)}
+@media (prefers-reduced-motion: reduce){#mark{transition:none}}
+#scroll{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 12px 60vh 14px}
+.intro{font-size:14px;line-height:1.5;color:var(--muted);margin:14px 0 4px;max-width:62ch}
+.intro b{color:var(--ink)}
+h2{position:sticky;top:0;background:var(--bg);margin:0;padding:14px 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);z-index:1;border-bottom:1px solid var(--rule)}
+h2 span{font-weight:400;letter-spacing:0;text-transform:none}
+.ev{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--rule);padding:10px 4px 10px 16px;cursor:pointer;position:relative}
+.ev::before{content:"";position:absolute;left:0;top:15px;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.ev .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ev .n{font-size:15px;font-weight:650;margin-top:1px;text-wrap:balance}
+.ev .x{display:none;font-size:14px;line-height:1.5;margin-top:6px;max-width:62ch;font-weight:400}
+.ev .k{display:none;font-size:11px;font-weight:700;color:var(--c);margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+.ev.open{background:var(--panel)} .ev.open .x,.ev.open .k{display:block}
+.ev.here .n{color:var(--now)}
+.c-cosmos{--c:var(--cosmos)} .c-life{--c:var(--life)} .c-humans{--c:var(--humans)} .c-faith{--c:var(--faith)}
+.c-empires{--c:var(--empires)} .c-wars{--c:var(--wars)} .c-tech{--c:var(--tech)} .c-arab{--c:var(--arab)}
+.foot{font-size:12px;line-height:1.5;color:var(--muted);margin:16px 0;max-width:62ch}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Big Bang to Today</h1><div id="when" aria-live="polite"></div></div>
+  <div id="era"></div>
+  <div class="chips" id="chips"></div>
+</header>
+<div id="wrap">
+  <div id="rail" aria-label="Time scale. Tap to jump."><div id="mark"></div></div>
+  <div id="scroll">
+    <p class="intro"><b>Scroll to travel from the Big Bang to today.</b> Tap an event to read about it. The rail on the left is the whole 13.8 billion years on a stretched scale, so the first billion years and the last fifteen both get room. Tap it to jump.</p>
+    <div id="list"></div>
+    <p class="foot">Dates before written records are estimates. Dates for Abraham, Moses, Jesus and the early life of Muhammad follow tradition and historians' best estimates, and each faith's own account is described as that faith's belief. Casualty figures are rounded.</p>
+  </div>
+</div>
+
+<script>
+const CAT={cosmos:"Cosmos",life:"Earth & life",humans:"Human origins",faith:"Faith & prophets",empires:"Civilisations & empires",wars:"Wars & crises",tech:"Science & tech",arab:"Arab world & Syria"};
+const ERAS=[
+ [-14e9,"The universe begins","13.8 to 4.6 billion years ago"],
+ [-4.6e9,"Earth and life","4.6 billion to 7 million years ago"],
+ [-7e6,"The human family","7 million to 12,000 years ago"],
+ [-12000,"First civilisations","10,000 to 600 BCE"],
+ [-600,"Classical world and Christianity","600 BCE to 570 CE"],
+ [570,"The rise of Islam","570 to 1299"],
+ [1299,"Ottomans and the age of discovery","1299 to 1760"],
+ [1760,"Revolutions and industry","1760 to 1914"],
+ [1914,"The world wars","1914 to 1945"],
+ [1946,"Cold War and independence","1946 to 1991"],
+ [1991.5,"The digital age","1991 to 2010"],
+ [2010.9,"Arab Spring to today","2010 to now"]
+];
+// year (negative = BCE or years before now for deep time), date label, category, title, text
+const E=[
+[-13.8e9,"13.8 billion years ago","cosmos","The Big Bang","Space, time, matter and energy begin in a hot, dense state and start expanding. Within minutes the first hydrogen and helium nuclei form."],
+[-13.7996e9,"380,000 years later","cosmos","First light","The universe cools enough for atoms to form and for light to travel freely. That glow can still be detected as the cosmic microwave background."],
+[-13.6e9,"About 13.6 billion years ago","cosmos","First stars and galaxies","Gravity pulls gas into the first stars. They forge heavier elements such as carbon, oxygen and iron, which are scattered when the stars explode."],
+[-4.6e9,"4.6 billion years ago","cosmos","The Sun and solar system","A cloud of gas and dust collapses. Its centre ignites as the Sun and the rest flattens into a disc that becomes the planets."],
+[-4.54e9,"4.54 billion years ago","cosmos","Earth forms","Rock and metal clump together into a molten young Earth."],
+[-4.5e9,"About 4.5 billion years ago","cosmos","The Moon","A Mars-sized body is thought to have struck the young Earth. The debris gathered into the Moon."],
+[-3.7e9,"At least 3.5 billion years ago","life","First life","Single-celled microbes appear in the oceans. The oldest widely accepted fossils are about 3.5 billion years old, and chemical traces hint at life earlier still."],
+[-2.4e9,"About 2.4 billion years ago","life","Oxygen fills the air","Photosynthesising bacteria release oxygen and transform the atmosphere, in what is called the Great Oxidation Event."],
+[-2.0e9,"About 2 billion years ago","life","Complex cells","Cells with a nucleus evolve. They are the ancestors of every plant, fungus and animal."],
+[-538e6,"538 million years ago","life","The Cambrian explosion","Most major animal groups appear in the fossil record within a few tens of millions of years."],
+[-470e6,"About 470 million years ago","life","Plants reach land","Simple plants spread from water onto bare rock and begin building soil."],
+[-375e6,"About 375 million years ago","life","Backbones walk ashore","Fish with limb-like fins, such as Tiktaalik, lead to the first four-legged land animals."],
+[-252e6,"252 million years ago","life","The Great Dying","The largest mass extinction wipes out most marine species and much of life on land."],
+[-230e6,"About 230 million years ago","life","Dinosaurs, then mammals","Dinosaurs appear and come to dominate. Small early mammals evolve alongside them."],
+[-66e6,"66 million years ago","life","An asteroid ends the age of dinosaurs","An asteroid roughly 10 km wide strikes what is now Mexico's Yucatán. Non-bird dinosaurs die out and mammals spread."],
+[-7e6,"About 7 million years ago","humans","Earliest human relatives","Sahelanthropus, found in Chad, is the oldest known candidate for our side of the split from chimpanzees."],
+[-4.4e6,"4.4 million years ago","humans","Ardi","Ardipithecus ramidus walks upright on the ground but keeps a grasping big toe for climbing."],
+[-3.3e6,"3.3 million years ago","humans","Oldest known stone tools","Tools from Lomekwi in Kenya are older than our own genus."],
+[-3.2e6,"3.2 million years ago","humans","Lucy","Australopithecus afarensis has a small brain and a fully upright walk. The Laetoli footprints belong to her kind."],
+[-2.4e6,"About 2.4 million years ago","humans","The genus Homo","Homo habilis, the \"handy man\", is long seen as the first of our genus."],
+[-1.9e6,"1.9 million years ago","humans","Homo erectus","The first human with modern body proportions, and the first to leave Africa. It lasts nearly two million years."],
+[-1.0e6,"About 1 million years ago","humans","Control of fire","The earliest firm evidence of controlled fire comes from Wonderwerk Cave in South Africa. Regular use came later."],
+[-430000,"430,000 years ago","humans","Neanderthals","Cold-adapted humans spread across Europe and western Asia. They make tools, bury their dead and later interbreed with us."],
+[-300000,"300,000 years ago","humans","Homo sapiens","Our own species appears in Africa. The oldest known fossils are from Jebel Irhoud in Morocco."],
+[-60000,"About 70,000 to 50,000 years ago","humans","Out of Africa","Modern humans spread into Asia, Australia and Europe, meeting Neanderthals and Denisovans on the way."],
+[-45000,"At least 45,000 years ago","humans","Cave art","Painted animals on cave walls in Indonesia, and later in France and Spain, show symbolic thought."],
+[-40000,"About 40,000 years ago","humans","Neanderthals disappear","Homo sapiens is soon the only human species left."],
+[-9500,"About 9500 BCE","empires","Göbekli Tepe","As the last ice age ends, hunter-gatherers in what is now south-eastern Türkiye raise carved stone pillars, the oldest known monuments."],
+[-9000,"About 9000 BCE","empires","Farming begins","People in the Fertile Crescent, across today's Syria, Iraq and the Levant, domesticate wheat, barley, sheep and goats. Villages and then towns follow."],
+[-3300,"About 3300 BCE","empires","Writing","Sumerians in Mesopotamia press signs into clay, and Egypt develops hieroglyphs. Recorded history starts here."],
+[-2560,"About 2560 BCE","empires","The Great Pyramid of Giza","Built for the pharaoh Khufu. It stays the tallest structure on Earth for nearly 4,000 years."],
+[-1800,"Traditionally 2000 to 1800 BCE","faith","Abraham","Revered as a patriarch by Jews, Christians and Muslims, who call him Ibrahim. The dating comes from tradition, not archaeology."],
+[-1754,"About 1754 BCE","empires","The Code of Hammurabi","The king of Babylon has 282 laws carved in stone, one of the earliest written legal codes."],
+[-1250,"Traditionally 13th century BCE","faith","Moses","Tradition places Moses (Musa) and the Exodus from Egypt around this time. Historians debate the dating."],
+[-1050,"About 1050 BCE","empires","The alphabet","The Phoenicians, on the coast of today's Lebanon and Syria, spread a short alphabet that becomes the ancestor of Greek, Latin, Hebrew and Arabic script."],
+[-551,"551 BCE","faith","Confucius is born","His teaching on duty, family and good government shapes China for more than two thousand years."],
+[-508,"508 BCE","empires","Democracy in Athens","Reforms give Athenian citizens a direct vote on laws."],
+[-480,"5th century BCE","faith","The Buddha","Siddhartha Gautama teaches in northern India. Scholars place his life in the 5th century BCE."],
+[-331,"334 to 323 BCE","empires","Alexander the Great","Alexander conquers from Greece to India. Greek language and culture spread across the Middle East."],
+[-27,"27 BCE","empires","The Roman Empire","Augustus becomes the first emperor. Rome already rules Syria, Egypt and the whole Mediterranean."],
+[-4,"About 6 to 4 BCE","faith","Birth of Jesus","Jesus is born in Bethlehem, in Roman-ruled Judea, according to the Gospels. Most historians date the birth to shortly before the death of King Herod in 4 BCE."],
+[28,"About 27 to 29 CE","faith","Baptism and ministry of Jesus","After being baptised by John in the River Jordan, Jesus teaches and heals in Galilee and Judea for one to three years and gathers disciples."],
+[30,"About 30 or 33 CE","faith","Crucifixion","Jesus is crucified in Jerusalem under the Roman governor Pontius Pilate. Christians believe he rose on the third day and ascended to heaven forty days later. In Islam, Jesus (Isa) is a prophet who was not killed but raised up by God."],
+[50,"About 50 to 100 CE","faith","Christianity spreads","Paul and others carry the message through Damascus, Antioch and on to Rome. The Gospels are written down. Followers are first called Christians at Antioch, in ancient Syria."],
+[313,"313","faith","Christianity legalised","The emperor Constantine ends persecution with the Edict of Milan. By 380 Christianity is the religion of the Roman state."],
+[476,"476","empires","Rome falls in the west","The western empire ends. The eastern half continues from Constantinople as the Byzantine Empire for another thousand years."],
+[570,"About 570","faith","Birth of Muhammad","Muhammad is born in Mecca. Orphaned young, he is raised by his grandfather and then his uncle Abu Talib."],
+[610,"610","faith","The first revelation","Muslims believe the angel Gabriel brought Muhammad the first verses of the Qur'an in the Cave of Hira, with revelation continuing for 23 years."],
+[622,"622","faith","The Hijra","Facing persecution, Muhammad and his followers migrate from Mecca to Medina. This year becomes year 1 of the Islamic calendar."],
+[630,"630","faith","Return to Mecca","Muhammad enters Mecca with little bloodshed. The Kaaba is dedicated to the worship of one God."],
+[632,"632","faith","Farewell Pilgrimage and death of Muhammad","After his final pilgrimage and sermon, Muhammad dies in Medina. Abu Bakr becomes the first caliph."],
+[634,"632 to 661","empires","The Rashidun caliphs","Under Abu Bakr, Umar, Uthman and Ali, Islam expands with great speed. Within thirty years Muslim armies take Syria, Jerusalem, Egypt and Persia."],
+[661,"661","empires","Umayyad Caliphate in Damascus","Damascus becomes the capital of an empire that will stretch from Spain to Central Asia. Its great Umayyad Mosque is completed in 715."],
+[680,"680","faith","Karbala","Husayn, grandson of the Prophet, is killed at Karbala in Iraq. The event is central to the division between Sunni and Shia Islam."],
+[711,"711","empires","Muslims enter Spain","Tariq ibn Ziyad crosses the strait that still carries his name, Gibraltar. Al-Andalus lasts nearly 800 years."],
+[762,"750 to 762","empires","Abbasids and Baghdad","The Abbasids overthrow the Umayyads and found Baghdad. Its scholars advance algebra, medicine and astronomy and preserve Greek learning."],
+[1099,"1095 to 1099","wars","The First Crusade","European armies march east and capture Jerusalem in 1099."],
+[1187,"1187","wars","Saladin retakes Jerusalem","After his victory at Hattin, Saladin takes the city back. He is buried in Damascus."],
+[1206,"1206","empires","The Mongol Empire","Genghis Khan unites the Mongol tribes and begins the largest connected land empire in history."],
+[1258,"1258","wars","Mongols sack Baghdad","The Abbasid caliphate ends. Two years later the Mamluks stop the Mongol advance at Ain Jalut in Palestine."],
+[1299,"About 1299","empires","The Ottoman state is founded","Osman I establishes a small principality in north-western Anatolia. It grows into an empire that lasts six centuries."],
+[1347,"1347 to 1351","wars","The Black Death","Plague kills perhaps a third or more of Europe's people and devastates the Middle East."],
+[1450,"About 1450","tech","The printing press","Gutenberg's movable type makes books cheap and ideas fast."],
+[1453,"1453","empires","Ottomans take Constantinople","Sultan Mehmed II conquers the city, ending the Byzantine Empire. As Istanbul it becomes the Ottoman capital."],
+[1492,"1492","empires","Columbus reaches the Americas","His voyage opens lasting contact between Europe and the Americas. People had lived there for well over 15,000 years, and Norse sailors had landed around the year 1000. In the same year Granada falls, ending Muslim rule in Spain."],
+[1516,"1516 to 1517","empires","Ottomans take Syria and Egypt","Selim I defeats the Mamluks at Marj Dabiq near Aleppo. The Ottomans rule Syria for the next 400 years and their sultans claim the caliphate."],
+[1519,"1519 to 1522","empires","First voyage around the world","Magellan's expedition, completed by Elcano, proves the globe can be circled by sea."],
+[1520,"1520 to 1566","empires","Suleiman the Magnificent","The Ottoman Empire reaches its height, from Hungary to Yemen and from Algeria to Iraq."],
+[1543,"1543","tech","Copernicus moves the Earth","His book argues that the Earth orbits the Sun, starting the scientific revolution."],
+[1683,"1683","wars","The siege of Vienna fails","The Ottoman advance into Europe is stopped. A long, slow retreat begins."],
+[1687,"1687","tech","Newton's laws","The Principia explains motion and gravity with mathematics."],
+[1769,"About 1760 to 1840","tech","The Industrial Revolution","Steam power and factories, first in Britain, change how people work and live."],
+[1776,"1776","wars","American independence","Thirteen British colonies declare themselves the United States."],
+[1789,"1789","wars","The French Revolution","The monarchy falls and ideas of citizenship and rights spread across Europe."],
+[1798,"1798","arab","Napoleon invades Egypt","The start of modern European intervention in the Arab world."],
+[1859,"1859","tech","Darwin's Origin of Species","Evolution by natural selection explains the family tree of life."],
+[1869,"1869","arab","The Suez Canal opens","A direct sea route links the Mediterranean and the Red Sea."],
+[1879,"1876 to 1879","tech","Telephone and light bulb","Bell's telephone and Edison's practical light bulb begin the electric age."],
+[1903,"1903","tech","First powered flight","The Wright brothers fly at Kitty Hawk."],
+[1905,"1905 to 1915","tech","Einstein's relativity","Space, time and gravity are rethought. The theory later underpins the Big Bang model itself."],
+[1914,"1914 to 1918","wars","World War I","Industrial warfare kills around 16 to 20 million people. The German, Austro-Hungarian, Russian and Ottoman empires collapse."],
+[1916,"1916","arab","Arab Revolt and Sykes-Picot","Arabs rise against Ottoman rule with British backing, while Britain and France secretly agree to divide the Ottoman Arab lands between themselves."],
+[1917,"1917","wars","Russian Revolution and Balfour Declaration","The Bolsheviks take power in Russia. In the same year Britain declares support for a \"national home for the Jewish people\" in Palestine."],
+[1918,"1918 to 1920","wars","Influenza pandemic","The flu kills tens of millions worldwide, more than the war."],
+[1920,"1920","arab","French Mandate in Syria","A short-lived Arab Kingdom of Syria under Faisal ends when French forces win at Maysalun and take control."],
+[1923,"1922 to 1924","empires","The Ottoman Empire ends","The sultanate is abolished in 1922, the Republic of Türkiye is declared in 1923 under Atatürk, and the caliphate is abolished in 1924."],
+[1928,"1928","tech","Penicillin","Fleming's discovery leads to antibiotics."],
+[1929,"1929","wars","The Great Depression","A Wall Street crash turns into a worldwide economic collapse."],
+[1932,"1932","arab","Saudi Arabia founded","The kingdom is unified under Ibn Saud. Oil is found six years later."],
+[1936,"1936","tech","Turing imagines the computer","Alan Turing describes a universal machine that can carry out any calculation."],
+[1939,"1939 to 1945","wars","World War II","The deadliest war in history kills an estimated 70 to 85 million people, including six million Jews murdered in the Holocaust. It ends after atomic bombs fall on Hiroshima and Nagasaki."],
+[1945,"1945","wars","United Nations and Arab League","The UN is founded to prevent another world war. The Arab League is formed in Cairo, with Syria among its founders."],
+[1946,"17 April 1946","arab","Syria becomes independent","The last French troops leave."],
+[1947,"1947","tech","The transistor","Invented at Bell Labs, it becomes the building block of all modern electronics."],
+[1947.5,"1947","wars","India and Pakistan","British rule ends and the subcontinent is partitioned."],
+[1947.8,"1947 to 1991","wars","The Cold War","The United States and the Soviet Union compete for influence under the threat of nuclear war."],
+[1948,"1948","arab","Israel founded and the Nakba","Israel declares independence and war with neighbouring Arab states follows. About 700,000 Palestinians flee or are expelled, which Palestinians call the Nakba."],
+[1953,"1953","tech","The structure of DNA","The double helix shows how life stores and copies information."],
+[1956,"1956","tech","Artificial intelligence gets its name","A summer workshop at Dartmouth College launches AI as a field, six years after Turing asked whether machines can think."],
+[1956.5,"1956","arab","The Suez Crisis","Egypt's Nasser nationalises the canal. Britain, France and Israel attack and are forced to withdraw."],
+[1957,"1957 to 1961","tech","The space age begins","Sputnik is the first satellite in 1957, and Yuri Gagarin the first person in space in 1961."],
+[1958,"1958 to 1961","arab","United Arab Republic","Syria and Egypt unite as one state under Nasser. Syria withdraws after three years."],
+[1963,"8 March 1963","arab","The Ba'ath Party takes power in Syria","A military coup begins six decades of Ba'athist rule."],
+[1967,"June 1967","arab","The Six-Day War","Israel captures Sinai, Gaza, the West Bank, East Jerusalem and Syria's Golan Heights."],
+[1969,"20 July 1969","tech","Moon landing","Apollo 11 puts the first people on the Moon."],
+[1969.8,"29 October 1969","tech","ARPANET: the first message","Two computers in California exchange a message over the network that grows into the internet."],
+[1970,"November 1970","arab","Hafez al-Assad seizes power","A coup makes him Syria's ruler, and president from 1971. His family holds power for 54 years."],
+[1971,"1971","tech","Microprocessor and email","Intel puts a computer's brain on one chip, and the first email is sent between networked machines."],
+[1971.9,"2 December 1971","arab","United Arab Emirates founded","The emirates of the Gulf coast unite as one state as Britain withdraws."],
+[1973,"October 1973","arab","October War and oil embargo","Egypt and Syria attack Israeli-held Sinai and Golan. Arab oil producers cut supplies and prices quadruple."],
+[1979,"1979","wars","Iranian Revolution","The Shah falls and an Islamic republic is declared. In the same year Egypt and Israel sign a peace treaty."],
+[1982,"February 1982","arab","Hama","The Syrian army crushes an uprising by the Muslim Brotherhood in the city of Hama, killing many thousands."],
+[1983,"1 January 1983","tech","The internet is born","ARPANET switches to TCP/IP, the common language that lets separate networks join into one internet."],
+[1985,"1985","tech","Dot-com, dot-net, dot-org","The first names are registered under the new .com, .net and .org endings. The first .com is symbolics.com, on 15 March 1985."],
+[1989.9,"1989 to 1991","wars","The Cold War ends","The Berlin Wall falls in November 1989 and the Soviet Union dissolves in December 1991."],
+[1990.6,"1990 to 1991","arab","The Gulf War","Iraq invades Kuwait and is driven out by a US-led coalition."],
+[1991.6,"1989 to 1991","tech","The World Wide Web","Tim Berners-Lee invents the web at CERN and opens it to the public in August 1991. The internet becomes something anyone can browse."],
+[1997,"1997","tech","Deep Blue beats Kasparov","A computer defeats the world chess champion in a match for the first time."],
+[1998,"1998","tech","Google","Search makes the growing web usable."],
+[2000.4,"June 2000","arab","Bashar al-Assad becomes president","He succeeds his father Hafez. A brief opening known as the Damascus Spring is soon shut down."],
+[2001.7,"11 September 2001","wars","The 9/11 attacks","Al-Qaeda kills nearly 3,000 people in the United States, which then invades Afghanistan."],
+[2003.2,"2003","arab","The Iraq War","A US-led invasion topples Saddam Hussein. Years of insurgency and sectarian conflict follow."],
+[2003.3,"2003","tech","The human genome","The full human genetic code is read."],
+[2004,"2004 to 2007","tech","Social media and the smartphone","Facebook, YouTube and Twitter launch, and the iPhone puts the internet in every pocket."],
+[2008,"2008","wars","Global financial crisis","A banking collapse triggers the worst downturn since the 1930s."],
+[2009,"2009","tech","Bitcoin","The first decentralised digital currency goes live."],
+[2010.96,"17 December 2010","arab","The Arab Spring begins","Mohamed Bouazizi, a street vendor in Tunisia, sets himself on fire after harassment by officials. Protests spread across the Arab world."],
+[2011.04,"14 January 2011","arab","Tunisia: Ben Ali flees","The president leaves for Saudi Arabia after 23 years in power, the first Arab leader removed by the protests."],
+[2011.11,"11 February 2011","arab","Egypt: Mubarak resigns","Eighteen days of mass protest centred on Tahrir Square end his 30-year rule."],
+[2011.2,"March 2011","arab","Syria: the uprising begins","Protests start in Daraa after teenagers are arrested for anti-government graffiti. The government answers with force, and by 2012 the country is in civil war."],
+[2011.8,"20 October 2011","arab","Libya: Gaddafi killed","After 42 years in power he is captured and killed by rebels backed by NATO air power. The country later splits between rival governments."],
+[2012.15,"27 February 2012","arab","Yemen: Saleh hands over power","After 33 years he transfers power to his deputy. Yemen later descends into war."],
+[2012.7,"2012","tech","Deep learning breaks through","A neural network called AlexNet wins an image-recognition contest by a wide margin. Modern AI takes off."],
+[2013.5,"3 July 2013","arab","Egypt: Morsi removed","Mohamed Morsi, elected the year before, is removed by the army after mass protests. Army chief Abdel Fattah el-Sisi becomes president in 2014."],
+[2013.63,"21 August 2013","arab","Ghouta chemical attack","Rockets carrying sarin nerve agent hit suburbs of Damascus, killing hundreds of people."],
+[2014.5,"June 2014","arab","ISIS declares a caliphate","The group seizes Mosul in Iraq and rules from Raqqa in Syria. It loses its last territory in March 2019."],
+[2015.7,"September 2015","arab","Russia intervenes in Syria","Russian air power turns the war in Assad's favour, and Aleppo is retaken in December 2016. By now more than half of Syria's people have been forced from their homes."],
+[2016.1,"2015 to 2016","tech","Gravitational waves detected","Ripples in space from colliding black holes confirm a century-old prediction by Einstein."],
+[2016.2,"March 2016","tech","AlphaGo beats Lee Sedol","An AI defeats one of the world's best players at Go, a game long thought too subtle for machines."],
+[2017.5,"2017","tech","The transformer","A research paper introduces the design behind today's AI chatbots."],
+[2019.27,"April 2019","arab","Second wave: Algeria and Sudan","Algeria's Bouteflika resigns after 20 years and Sudan's Omar al-Bashir is ousted after 30."],
+[2020.2,"2020","wars","COVID-19 pandemic","A new coronavirus spreads worldwide. Millions die and daily life stops across much of the planet."],
+[2021.98,"25 December 2021","tech","James Webb Space Telescope","It soon photographs galaxies from the first few hundred million years, looking back almost to the top of this timeline."],
+[2022.15,"24 February 2022","wars","Russia invades Ukraine","The largest war in Europe since 1945 begins."],
+[2022.91,"30 November 2022","tech","ChatGPT","AI that writes and converses reaches the public and gains 100 million users in about two months. Claude, Gemini and others follow in 2023."],
+[2023.1,"6 February 2023","arab","Türkiye-Syria earthquake","A magnitude 7.8 earthquake kills more than 50,000 people across both countries."],
+[2023.77,"7 October 2023","arab","The Gaza war begins","A Hamas-led attack kills about 1,200 people in Israel. Israel's war in Gaza that follows kills tens of thousands of Palestinians."],
+[2024.94,"8 December 2024","arab","Syria: Assad falls","A rebel offensive from Idlib takes Aleppo, Hama, Homs and Damascus in under two weeks. Bashar al-Assad flees to Moscow, ending 54 years of family rule."],
+[2025.08,"29 January 2025","arab","Syria: Ahmed al-Sharaa becomes president","The leader of the offensive is named president for a transitional period. In November 2025 he visits the White House."],
+[2026.86,"November 2026","humans","Today","You are here, 13.8 billion years after the start."]
+];
+
+const NOW=2026.86, LOGMAX=Math.log10(13.8e9+1);
+const pos=t=>1-Math.log10(Math.max(0,NOW-t)+1)/LOGMAX;   // 0 = Big Bang, 1 = today
+const $=id=>document.getElementById(id), list=$("list"), sc=$("scroll"), rail=$("rail");
+
+// event list
+let eraIdx=-1; const cards=[];
+E.forEach(e=>{
+  while(eraIdx+1<ERAS.length && e[0]>=ERAS[eraIdx+1][0]){ eraIdx++; const h=document.createElement("h2"); h.textContent=ERAS[eraIdx][1]+" "; const s=document.createElement("span"); s.textContent="· "+ERAS[eraIdx][2]; h.appendChild(s); h._era=eraIdx; list.appendChild(h); }
+  const b=document.createElement("button"); b.className="ev c-"+e[2]; b.setAttribute("aria-expanded","false");
+  [["d",e[1]],["n",e[3]],["x",e[4]],["k",CAT[e[2]]]].forEach(([c,t])=>{const d=document.createElement("div"); d.className=c; d.textContent=t; b.appendChild(d);});
+  b._e=e; b._era=eraIdx; b.onclick=()=>{const o=b.classList.toggle("open"); b.setAttribute("aria-expanded",o);};
+  list.appendChild(b); cards.push(b);
+});
+
+// rail
+[[13.8e9,"13.8 B"],[1e9,"1 B"],[1e8,"100 M"],[1e6,"1 M"],[1e5,"100k"],[1e4,"10k"],[2026,"1 CE"],[226,"1800"],[76,"1950"],[16,"2010"],[0,"Now"]].forEach(([ago,l])=>{
+  const p=pos(NOW-ago)*100;
+  const a=document.createElement("div"); a.className="tk"; a.style.top=`calc(10px + (100% - 20px) * ${p/100})`; rail.appendChild(a);
+  const b=document.createElement("div"); b.className="tl"; b.style.top=a.style.top; b.textContent=l; rail.appendChild(b);
+});
+cards.forEach(c=>{const d=document.createElement("div"); d.className="dot c-"+c._e[2]; d.style.top=`calc(10px + (100% - 20px) * ${pos(c._e[0])})`; c._dot=d; rail.appendChild(d);});
+
+// filters
+let filter=null;
+const chips=$("chips");
+function chip(key,label){const b=document.createElement("button"); b.className="chip"+(key?" c-"+key:""); if(key){const i=document.createElement("i"); b.appendChild(i);} b.appendChild(document.createTextNode(label)); b.setAttribute("aria-pressed",key===filter); b.onclick=()=>setFilter(key); b._k=key; chips.appendChild(b);}
+chip(null,"All"); Object.keys(CAT).forEach(k=>chip(k,CAT[k]));
+const all=document.createElement("button"); all.className="chip"; all.textContent="Expand all"; let exp=false;
+all.onclick=()=>{exp=!exp; cards.forEach(c=>{c.classList.toggle("open",exp); c.setAttribute("aria-expanded",exp);}); all.textContent=exp?"Collapse all":"Expand all"; update();};
+chips.appendChild(all);
+function setFilter(k){
+  filter=k; [...chips.children].forEach(b=>{ if("_k" in b) b.setAttribute("aria-pressed",b._k===k); });
+  cards.forEach(c=>{const on=!k||c._e[2]===k; c.style.display=on?"":"none"; c._dot.style.display=on?"":"none";});
+  list.querySelectorAll("h2").forEach(h=>{h.style.display=cards.some(c=>c._era===h._era&&c.style.display!=="none")?"":"none";});
+  sc.scrollTop=0; update();
+}
+
+// where am I
+let here=null;
+function update(){
+  const top=sc.getBoundingClientRect().top+70;
+  const vis=cards.filter(c=>c.style.display!=="none");
+  let cur=vis[0];
+  for(const c of vis){ if(c.getBoundingClientRect().top<=top) cur=c; else break; }
+  if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2) cur=vis[vis.length-1];
+  if(!cur||cur===here) return;
+  if(here) here.classList.remove("here"); here=cur; cur.classList.add("here");
+  $("when").textContent=cur._e[1]; $("era").textContent=ERAS[cur._era][1];
+  $("mark").style.top=`calc(10px + (100% - 20px) * ${pos(cur._e[0])})`;
+}
+sc.addEventListener("scroll",()=>requestAnimationFrame(update),{passive:true});
+addEventListener("resize",update);
+
+// tap or drag the rail to jump
+function jump(ev){
+  const r=rail.getBoundingClientRect(), f=Math.min(1,Math.max(0,(ev.clientY-r.top-10)/(r.height-20)));
+  const vis=cards.filter(c=>c.style.display!=="none"); if(!vis.length) return;
+  let best=vis[0], bd=9; vis.forEach(c=>{const d=Math.abs(pos(c._e[0])-f); if(d<bd){bd=d;best=c;}});
+  sc.scrollTop+=best.getBoundingClientRect().top-sc.getBoundingClientRect().top-60;
+}
+let drag=false;
+rail.addEventListener("pointerdown",e=>{drag=true; try{rail.setPointerCapture(e.pointerId);}catch(_){ } jump(e);});
+rail.addEventListener("pointermove",e=>{if(drag) jump(e);});
+["pointerup","pointercancel"].forEach(n=>rail.addEventListener(n,()=>{drag=false;}));
+
+cards[0].classList.add("open"); cards[0].setAttribute("aria-expanded","true");
+update();
+</script>
+</body>
+</html>

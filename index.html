@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon.svg">
+<style>
+/* The platform shell: a tab bar of topics; each topic is its own standalone HTML file shown in a
+   frame, so every topic keeps its own look. A home tab lists them as cards. */
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#eef1f6; --muted:#9aa3b2; --rule:#2a2f3a;
+  --accent:#5b9dff; --accent2:#8b7bff; --shadow:0 6px 24px rgba(0,0,0,.3);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#eef1f6; --panel:#ffffff; --panel2:#f4f6fa; --ink:#1a1e26; --muted:#5a6474; --rule:#e0e4ec;
+  --accent:#2f6fe0; --accent2:#6b57e0; --shadow:0 6px 24px rgba(20,30,60,.12);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:light){ :root:not([data-theme="dark"]):not([data-theme="light"]){
+  --bg:#eef1f6; --panel:#ffffff; --panel2:#f4f6fa; --ink:#1a1e26; --muted:#5a6474; --rule:#e0e4ec;
+  --accent:#2f6fe0; --accent2:#6b57e0; --shadow:0 6px 24px rgba(20,30,60,.12); color-scheme:light;
+}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+header{flex:none;background:var(--panel);border-bottom:1px solid var(--rule);display:flex;align-items:stretch;gap:0;padding:0 8px;min-height:52px}
+.brand{display:flex;align-items:center;gap:9px;padding:0 10px 0 6px;font-weight:800;font-size:15px;white-space:nowrap;border-right:1px solid var(--rule);margin-right:6px}
+.brand .mk{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#fff;font-size:15px;box-shadow:var(--shadow)}
+.brand b{letter-spacing:.01em}
+.tabs{display:flex;align-items:stretch;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:0 14px;cursor:pointer;color:var(--muted);
+  font-size:13.5px;font-weight:600;white-space:nowrap;position:relative;border-radius:0}
+.tab .ic{font-size:15px}
+.tab:hover{color:var(--ink);background:var(--panel2)}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;
+  background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.htoggle{flex:none;align-self:center;border:1px solid var(--rule);background:var(--panel2);border-radius:8px;width:34px;height:32px;cursor:pointer;margin-left:6px;font-size:14px}
+
+/* stage */
+.stage{flex:1;min-height:0;position:relative}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+.ftool{position:absolute;right:12px;bottom:12px;z-index:3}
+.ftool a{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--rule);border-radius:999px;
+  padding:7px 13px;font-size:12.5px;color:var(--ink);text-decoration:none;box-shadow:var(--shadow);font-weight:600}
+.ftool a:hover{border-color:var(--accent)}
+
+/* home */
+#home{overflow-y:auto}
+.hero{max-width:980px;margin:0 auto;padding:40px 22px 10px}
+.hero .eye{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.hero h1{font-size:clamp(26px,5vw,40px);margin:8px 0 10px;font-weight:850;letter-spacing:-.01em;text-wrap:balance}
+.hero p{font-size:15.5px;line-height:1.6;color:var(--muted);max-width:60ch;margin:0}
+.cards{max-width:980px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{text-align:left;background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:0;cursor:pointer;overflow:hidden;
+  display:flex;flex-direction:column;transition:transform .14s,border-color .14s,box-shadow .14s}
+.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
+.card .top{height:92px;display:grid;place-items:center;font-size:40px;background:var(--grad)}
+.card .bd{padding:14px 16px 16px}
+.card h3{margin:0 0 5px;font-size:17px;font-weight:750}
+.card p{margin:0;font-size:13.5px;line-height:1.5;color:var(--muted)}
+.card .go{margin-top:12px;font-size:13px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}
+.foot{max-width:980px;margin:0 auto;padding:6px 22px 40px;color:var(--muted);font-size:12.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="mk" aria-hidden="true"><svg viewBox="0 0 64 64" width="20" height="20"><g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"><circle cx="29" cy="36" r="13.5"/><ellipse cx="29" cy="36" rx="5.4" ry="13.5"/><ellipse cx="29" cy="36" rx="13.5" ry="5.2"/></g><path d="M48 12 l1.9 5.2 5.2 1.9 -5.2 1.9 -1.9 5.2 -1.9 -5.2 -5.2 -1.9 5.2 -1.9 Z" fill="#fff"/></svg></span><b>Atlas</b></div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Topics"></div>
+  <a class="htoggle" id="standalone" target="_blank" rel="noopener" title="Open this topic in a new browser tab"
+     style="display:none;align-items:center;justify-content:center;text-decoration:none;font-size:15px">↗</a>
+  <button class="htoggle" id="theme" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+</header>
+<div class="stage" id="stage">
+  <section class="view on" id="home" role="tabpanel">
+    <div class="hero">
+      <div class="eye">Explore &amp; learn</div>
+      <h1>A small library of things worth understanding.</h1>
+      <p>Each topic below is its own self-contained interactive page. Open one in a tab, play with it, and switch between them freely — they keep their place while you explore the others.</p>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="foot" id="foot"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const TOPICS=[
+  {id:"big-bang", title:"Big Bang to Today", icon:"🌌", file:"big-bang-to-today.html",
+   grad:"linear-gradient(135deg,#1b2a6b,#3f4aa8 55%,#a23e6a)",
+   blurb:"Scroll from the first instant of the universe to this morning — 13.8 billion years of cosmos, Earth, life and human history on one stretched timeline."},
+  {id:"family", title:"Human Family Tree", icon:"🦴", file:"human-family-tree.html",
+   grad:"linear-gradient(135deg,#2f6a52,#2f8a66 55%,#a23e6a)",
+   blurb:"Meet our ancestors and extinct cousins, from Sahelanthropus to Homo sapiens, as life-lines hanging from a tree of deep time."},
+  {id:"countries", title:"Countries Atlas", icon:"🗺️", file:"countries.html",
+   grad:"linear-gradient(135deg,#b5552f,#d9a93f 55%,#4faa82)",
+   blurb:"Every country on an interactive world map: search and filter them, read their size, people and cities, and drag a yearly timeline to see the weather change."},
+  {id:"solar", title:"Solar System", icon:"🪐", file:"solar-system.html",
+   grad:"linear-gradient(135deg,#0b1026,#3a2a6b 50%,#c98a3a)",
+   blurb:"Fly through a real-time 3D Solar System. Planets sit at their true positions for any date, with real sizes, tilts and orbits — click one to learn about it."}
+];
+
+const tabsEl=document.getElementById("tabs"), stage=document.getElementById("stage"), cardsEl=document.getElementById("cards");
+const views={home:document.getElementById("home")};
+const tabEls={};
+
+// Home tab button
+function mkTab(id,label,icon){
+  const b=document.createElement("button"); b.className="tab"; b.setAttribute("role","tab");
+  b.setAttribute("aria-selected","false"); b.dataset.id=id;
+  b.innerHTML=(icon?`<span class="ic">${icon}</span>`:"")+`<span>${label}</span>`;
+  b.onclick=()=>show(id); tabsEl.appendChild(b); tabEls[id]=b; return b;
+}
+mkTab("home","Home","⌂");
+TOPICS.forEach(t=>mkTab(t.id,t.title,t.icon));
+
+// Home cards
+TOPICS.forEach(t=>{
+  const c=document.createElement("button"); c.className="card"; c.onclick=()=>show(t.id);
+  c.innerHTML=`<div class="top" style="--grad:${t.grad}">${t.icon}</div>
+    <div class="bd"><h3>${t.title}</h3><p>${t.blurb}</p><div class="go">Open topic →</div></div>`;
+  cardsEl.appendChild(c);
+});
+document.getElementById("foot").innerHTML=
+  `${TOPICS.length} topics · each one is a standalone file you can open on its own. `+
+  `Tip: inside a topic you can switch its own light/dark theme independently.`;
+
+// Views (lazy iframes, kept alive so each topic preserves its state)
+function ensureView(t){
+  if(views[t.id]) return views[t.id];
+  const v=document.createElement("section"); v.className="view"; v.id="v-"+t.id; v.setAttribute("role","tabpanel");
+  const f=document.createElement("iframe"); f.title=t.title; f.setAttribute("loading","lazy");
+  f.src=t.file; v.appendChild(f);
+  stage.appendChild(v); views[t.id]=v; return v;
+}
+
+let current="home";
+function show(id){
+  const t=TOPICS.find(x=>x.id===id);
+  if(t) ensureView(t);
+  Object.values(views).forEach(v=>v.classList.remove("on"));
+  (views[id]||views.home).classList.add("on");
+  Object.values(tabEls).forEach(b=>b.setAttribute("aria-selected","false"));
+  (tabEls[id]||tabEls.home).setAttribute("aria-selected","true");
+  const sa=document.getElementById("standalone");
+  if(t){ sa.style.display="flex"; sa.href=t.file; } else { sa.style.display="none"; }
+  current=id;
+  try{ location.hash=id==="home"?"":("#"+id); }catch(e){}
+  try{ localStorage.setItem("lp.tab",id); }catch(e){}
+  document.title = id==="home" ? "Atlas" : (t? t.title+" · Atlas":"Atlas");
+}
+
+// keyboard: left/right move tabs
+tabsEl.addEventListener("keydown",e=>{
+  const order=["home",...TOPICS.map(t=>t.id)]; const i=order.indexOf(current);
+  if(e.key==="ArrowRight"){ e.preventDefault(); show(order[(i+1)%order.length]); tabEls[current].focus(); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); show(order[(i-1+order.length)%order.length]); tabEls[current].focus(); }
+});
+
+// theme
+document.getElementById("theme").onclick=()=>{
+  const r=document.documentElement, cur=r.getAttribute("data-theme");
+  const dark = cur==="dark" || (cur!=="light" && matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme", dark?"light":"dark");
+  try{ localStorage.setItem("lp.theme", dark?"light":"dark"); }catch(e){}
+};
+try{ const th=localStorage.getItem("lp.theme"); if(th) document.documentElement.setAttribute("data-theme",th); }catch(e){}
+
+// initial route: hash > last tab > home
+(function(){
+  let id=(location.hash||"").replace("#","");
+  if(!TOPICS.some(t=>t.id===id)){ try{ id=localStorage.getItem("lp.tab")||"home"; }catch(e){ id="home"; } }
+  if(id!=="home" && !TOPICS.some(t=>t.id===id)) id="home";
+  show(id);
+})();
+window.addEventListener("hashchange",()=>{ const id=(location.hash||"").replace("#","")||"home"; if(id!==current) show(id); });
+</script>
+</body>
+</html>

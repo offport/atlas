@@ -276,7 +276,7 @@ const earthMat=new THREE.ShaderMaterial({
       float water=texture2D(specMap,vUv).r;
       vec3 V=normalize(camPos-vPosW); vec3 H=normalize(L+V);
       float spec=pow(max(dot(N,H),0.0),28.0)*water*step(0.0,d);
-      vec3 col=mix(night*uNight*1.25, day*(0.06+0.98*lit), t);
+      vec3 col=mix(night*uNight*1.3, day*(0.12+1.04*lit), t);
       col+=vec3(0.75,0.82,0.95)*spec*0.55;
       float rim=pow(1.0-max(dot(N,V),0.0),2.6)*lit;
       col+=vec3(0.28,0.55,1.0)*rim*0.45;
@@ -617,6 +617,9 @@ function tick(now){
 }
 rateEl.textContent="1 day/s";
 updateSun(); applyVis(); buildLegend();
+// open facing the sunlit hemisphere (slightly off-axis to reveal the terminator) so the Earth reads bright on load
+(function faceSun(){ const sd=earthUniforms.sunDir.value;
+  camTheta=tTheta=Math.atan2(sd.z,sd.x)+0.35; camPhi=tPhi=1.12; })();
 requestAnimationFrame(tick);
 addEventListener("resize",()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
 

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Two World Wars</title>
+<style>
+/* Layout: one screen. Four tabs across the top, a plain list underneath. Every row is a short
+   headline that opens to the full detail when tapped. */
+:root{
+  --bg:#f3f3f0; --panel:#ffffff; --ink:#1d2327; --muted:#626b70; --rule:#d6d9d6; --a:#3d5a80; --ww1:#6a7434; --mid:#8a5a3c; --ww2:#3d5a80; --cmp:#5b4a8a;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#15181a; --panel:#1f2427; --ink:#e9edef; --muted:#9ba5aa; --rule:#30373b; --ww1:#b4c069; --mid:#d2a07c; --ww2:#8fb3e0; --cmp:#b3a2e6; color-scheme: dark; }
+}
+:root[data-theme="dark"]{ --bg:#15181a; --panel:#1f2427; --ink:#e9edef; --muted:#9ba5aa; --rule:#30373b; --ww1:#b4c069; --mid:#d2a07c; --ww2:#8fb3e0; --cmp:#b3a2e6; color-scheme: dark; }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.t-ww1{--a:var(--ww1)} .t-mid{--a:var(--mid)} .t-ww2{--a:var(--ww2)} .t-cmp{--a:var(--cmp)}
+
+header{flex:none;background:var(--panel);border-bottom:1px solid var(--rule);padding:10px 14px 0}
+.w{max-width:720px;margin:0 auto}
+h1{font-size:16px;margin:0 0 8px;font-weight:700}
+.tabs{display:flex;gap:2px}
+.tab{flex:1;background:transparent;border:0;border-bottom:3px solid transparent;padding:8px 2px 9px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--a);border-bottom-color:var(--a)}
+
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pg{padding:0 14px 40px}
+.lead{font-size:15px;line-height:1.5;margin:16px 0 0;max-width:64ch}
+.glance{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0 0}
+@media (min-width:600px){.glance{grid-template-columns:repeat(4,1fr)}}
+.glance div{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.glance b{display:block;font-size:17px;color:var(--a);font-variant-numeric:tabular-nums}
+.glance span{font-size:12px;color:var(--muted)}
+.hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:26px 0 8px}
+h2{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
+.all{background:transparent;border:0;color:var(--a);font-size:13px;cursor:pointer;padding:4px 0}
+.years{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 8px}
+.years::-webkit-scrollbar{display:none}
+.yr{flex:none;border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums}
+.yr[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:var(--panel);font-weight:600}
+.list{background:var(--panel);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.row{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--rule);padding:11px 34px 11px 12px;cursor:pointer;position:relative}
+.row:last-child{border-bottom:0}
+.row::after{content:"+";position:absolute;right:12px;top:10px;font-size:18px;color:var(--muted);line-height:1}
+.row.open::after{content:"−"}
+.row .d{font-size:12px;color:var(--a);font-weight:600;font-variant-numeric:tabular-nums}
+.row .n{font-size:15px;font-weight:600;margin-top:1px}
+.row .x{display:none;font-size:14px;line-height:1.5;margin-top:6px;max-width:64ch;font-weight:400}
+.row.open .x{display:block}
+.sides{display:grid;gap:10px}
+@media (min-width:600px){.sides{grid-template-columns:1fr 1fr}}
+.side h3{font-size:14px;margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.4}
+tr:last-child td{border-bottom:0}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td:first-child{color:var(--muted);font-size:12.5px;width:24%}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0;max-width:64ch}
+
+.hero{background:var(--panel);border:1px solid var(--rule);border-radius:8px;margin:14px 0 0;padding:6px 8px 0;color:var(--a)}
+.hero svg{display:block;width:100%;height:auto}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:stretch}
+.camp{background:var(--panel);border:1px solid var(--rule);border-top:4px solid var(--a);border-radius:8px;padding:8px}
+.camp.b{border-top-color:var(--ink)}
+.camp h3{font-size:13px;margin:0 0 6px;text-align:center}
+.flags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.flag{background:transparent;border:2px solid transparent;border-radius:6px;padding:4px 3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.flag svg{width:100%;max-width:72px;display:block;border:1px solid var(--rule);border-radius:3px}
+.flag{min-width:0}
+.flag span{font-size:11px;line-height:1.2;text-align:center;overflow-wrap:anywhere}
+.flag.on{border-color:var(--a);background:var(--bg)}
+.vsb{align-self:center;font-weight:800;font-size:12px;background:var(--ink);color:var(--bg);border-radius:50%;width:30px;height:30px;display:grid;place-items:center}
+.det{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--a);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.5}
+.det b{display:block;font-size:14px;margin-bottom:2px}
+.det p{margin:0;max-width:64ch}
+.mach{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.mach::-webkit-scrollbar{display:none}
+.mc{flex:none;width:112px;background:var(--panel);border:2px solid var(--rule);border-radius:8px;padding:8px 8px 6px;cursor:pointer;color:var(--a);text-align:center}
+.mc svg{display:block;width:100%;height:auto}
+.mc span{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-top:4px}
+.mc.on{border-color:var(--a)}
+.ic{fill:currentColor} .ic .c{fill:var(--panel)} .ic .l{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round}
+.pic{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.pic div{font-size:13px;font-weight:600;margin:4px 0 2px}
+.pic i{display:inline-block;width:12px;height:12px;border-radius:50%;margin:2px;background:var(--ww1)}
+.pic .two i{background:var(--ww2)}
+</style>
+</head>
+<body>
+<header><div class="w"><h1>The Two World Wars</h1><div class="tabs" id="tabs" role="tablist"></div></div></header>
+<main id="main"><div class="w pg" id="pg"></div></main>
+
+<script>
+const D={
+ww1:{tab:"WWI",name:"World War I",
+ lead:"A regional crisis in the Balkans pulled every great power in Europe into four years of industrial slaughter. It destroyed four empires and set the stage for an even larger war.",
+ glance:[["1914–1918","28 July 1914 to 11 November 1918"],["16–20 million","dead, about half of them soldiers"],["30+ countries","about 65 million men mobilised"],["Armistice","then the Treaty of Versailles, 1919"]],
+ causes:[
+  ["Rival alliances","Europe was split into two armed camps. France, Russia and Britain formed the Triple Entente. Germany, Austria-Hungary and Italy formed the Triple Alliance. A quarrel between any two members could drag in all the rest."],
+  ["Arms race and war plans","The great powers had spent decades building huge conscript armies. Britain and Germany raced to build battleships. Germany's Schlieffen Plan required attacking France through Belgium within days of any war with Russia, which left almost no time for diplomacy."],
+  ["Empire and rivalry","Britain and France held vast colonial empires. Germany, unified only in 1871, wanted comparable power and markets. Competition over colonies, trade and prestige poisoned relations."],
+  ["Nationalism in the Balkans","As Ottoman power faded, Serbia wanted to unite the South Slavs, many of whom lived under Austria-Hungary. Russia backed Serbia. Austria-Hungary saw Serbian nationalism as a threat to its survival."],
+  ["The spark: Sarajevo, 28 June 1914","Gavrilo Princip, a Bosnian Serb nationalist, shot dead Archduke Franz Ferdinand, heir to the Austro-Hungarian throne, and his wife Sophie. Austria-Hungary blamed Serbia and, with German backing, sent an ultimatum designed to be refused."],
+  ["The July Crisis","Austria-Hungary declared war on Serbia on 28 July. Russia mobilised to defend Serbia. Germany declared war on Russia on 1 August and on France on 3 August, then invaded neutral Belgium. Britain declared war on Germany on 4 August."]],
+ sides:[["The Allies",[
+   ["France","Fought from the first day. Most of the Western Front ran through its territory, and it lost about 1.4 million soldiers."],
+   ["British Empire","Entered on 4 August 1914 after Germany invaded Belgium. Troops came from Britain, India, Canada, Australia, New Zealand, South Africa and elsewhere. Its navy blockaded Germany."],
+   ["Russia","Fought Germany and Austria-Hungary on the Eastern Front. After two revolutions in 1917 it left the war with the Treaty of Brest-Litovsk in March 1918."],
+   ["Italy","A pre-war partner of Germany and Austria-Hungary, it stayed out in 1914 and joined the Allies in May 1915, fighting Austria-Hungary in the Alps."],
+   ["United States","Neutral until 6 April 1917. German submarine attacks and the Zimmermann Telegram brought it in. Fresh American troops helped decide the war in 1918."],
+   ["Others","Serbia, Belgium, Japan, Romania, Greece and Portugal, plus the Arab forces of the Arab Revolt from 1916."]]],
+  ["The Central Powers",[
+   ["Germany","The strongest military power of the alliance. It fought on two fronts, defeated Russia, and came close to winning in the west in 1914 and again in spring 1918."],
+   ["Austria-Hungary","Its attack on Serbia began the war. A multinational empire, it struggled militarily and broke apart in defeat."],
+   ["Ottoman Empire","Joined in late 1914. It fought in the Caucasus, Gallipoli, Mesopotamia, Palestine and Arabia, and was dismantled after the war."],
+   ["Bulgaria","Joined in October 1915 and helped defeat Serbia. It was the first Central Power to seek an armistice, in September 1918."]]]],
+ years:[1914,1915,1916,1917,1918],
+ time:[
+  [1914,"28 June","Assassination in Sarajevo","Archduke Franz Ferdinand of Austria-Hungary and his wife are shot by Gavrilo Princip. Within five weeks the great powers are at war."],
+  [1914,"28 July to 4 August","War is declared","Austria-Hungary declares war on Serbia. Germany declares war on Russia and France and invades Belgium. Britain declares war on Germany."],
+  [1914,"26 to 30 August","Battle of Tannenberg","Germany destroys a Russian army in East Prussia. The Eastern Front stays far more mobile than the west."],
+  [1914,"6 to 12 September","First Battle of the Marne","French and British forces stop the German advance just short of Paris. The plan for a quick victory fails."],
+  [1914,"Autumn","The trenches","Both sides dig in. A line of trenches soon runs about 700 km from the English Channel to Switzerland and barely moves for three years."],
+  [1914,"November","The Ottoman Empire joins","The Ottomans enter on Germany's side, spreading the war across the Middle East."],
+  [1914,"25 December","The Christmas Truce","In places along the Western Front soldiers stop firing, meet in no man's land and exchange gifts. Commanders make sure it does not happen again."],
+  [1915,"22 April","Poison gas at Ypres","Germany releases chlorine gas, the first large-scale use of chemical weapons. Both sides soon use gas."],
+  [1915,"From 24 April","The Armenian Genocide","The Ottoman government deports and kills its Armenian population. Estimates of the dead reach 1 to 1.5 million."],
+  [1915,"April to January 1916","Gallipoli","Allied troops land on the Gallipoli peninsula to knock out the Ottomans and are held off. They withdraw after heavy losses on both sides."],
+  [1915,"7 May","Sinking of the Lusitania","A German submarine sinks the British liner, killing 1,198 people including 128 Americans. Opinion in the United States turns against Germany."],
+  [1915,"23 May","Italy joins the Allies","Italy opens a new front against Austria-Hungary in the Alps."],
+  [1916,"21 February to 18 December","Battle of Verdun","Germany tries to bleed the French army white. The battle lasts ten months and costs around 700,000 casualties for almost no change in the line."],
+  [1916,"May and June","Sykes-Picot and the Arab Revolt","Britain and France secretly agree to divide the Ottoman Arab lands. In June the Arab Revolt against Ottoman rule begins, with British support."],
+  [1916,"31 May to 1 June","Battle of Jutland","The only full clash of the British and German battle fleets. Britain loses more ships but keeps control of the sea and its blockade of Germany."],
+  [1916,"1 July to 18 November","Battle of the Somme","Britain suffers about 57,000 casualties on the first day, the worst day in its military history. More than a million men are killed or wounded in all. Tanks are used for the first time in September."],
+  [1917,"February","Unrestricted submarine warfare","Germany announces it will sink any ship near Britain, gambling it can starve Britain before America can act."],
+  [1917,"March","Revolution in Russia","Strikes and mutinies force Tsar Nicholas II to abdicate. A provisional government keeps Russia in the war."],
+  [1917,"6 April","The United States declares war","Submarine attacks and the Zimmermann Telegram, in which Germany proposed an alliance with Mexico, bring America in."],
+  [1917,"July to November","Passchendaele","A British offensive in Flanders sinks into mud. Hundreds of thousands of casualties gain a few kilometres."],
+  [1917,"2 November","The Balfour Declaration","Britain declares support for a national home for the Jewish people in Palestine."],
+  [1917,"7 November","The Bolshevik Revolution","Lenin's Bolsheviks seize power in Russia and seek peace at once."],
+  [1917,"9 December","British forces take Jerusalem","Four centuries of Ottoman rule in the city end."],
+  [1918,"3 March","Treaty of Brest-Litovsk","Russia leaves the war and gives up vast territory. Germany moves its armies west."],
+  [1918,"21 March","The German Spring Offensive","Germany makes a last attempt to win before American troops arrive in strength. It breaks through but cannot finish the job."],
+  [1918,"8 August","The Hundred Days","An Allied attack at Amiens begins a run of victories that pushes the German army back steadily."],
+  [1918,"1918 to 1920","The influenza pandemic","A deadly flu spreads through armies and cities worldwide. It kills tens of millions, more than the war itself."],
+  [1918,"October","The Central Powers collapse","Damascus falls on 1 October. Bulgaria, the Ottoman Empire and Austria-Hungary each sign armistices within weeks."],
+  [1918,"9 November","The Kaiser abdicates","Revolution spreads in Germany. Wilhelm II flees to the Netherlands and a republic is declared."],
+  [1918,"11 November","The Armistice","Fighting stops at 11 a.m. on the eleventh day of the eleventh month."]],
+ end:[
+  ["An armistice, not a surrender","Germany's army was beaten but still stood on foreign soil when the fighting stopped. Many Germans later believed the lie that they had been \"stabbed in the back\" by politicians at home."],
+  ["The Treaty of Versailles, 28 June 1919","Germany had to accept blame for the war, pay reparations later set at 132 billion gold marks, give up about 13% of its territory and all its colonies, cut its army to 100,000 men and keep troops out of the Rhineland."],
+  ["Other treaties","Separate treaties broke up Austria-Hungary and the Ottoman Empire. The Ottoman treaty was replaced in 1923 after the Turkish War of Independence."]],
+ after:[
+  ["Four empires fell","The German, Austro-Hungarian, Russian and Ottoman empires all collapsed."],
+  ["A new map of Europe","Poland returned to the map. Czechoslovakia, Yugoslavia, Finland, Estonia, Latvia and Lithuania appeared as independent states."],
+  ["A new map of the Middle East","Britain took mandates over Iraq, Palestine and Transjordan. France took Syria and Lebanon. The borders drawn then still shape the region."],
+  ["The Soviet Union","The Russian Revolution produced the world's first communist state."],
+  ["The League of Nations","Founded in 1920 to prevent another war. The United States never joined and the League had no means to enforce its decisions."],
+  ["New ways of war","Machine guns, heavy artillery, poison gas, tanks, submarines and aircraft made killing industrial."],
+  ["Society changed","Millions of women had done war work, and several countries gave women the vote soon after, including Britain in 1918 and the United States in 1920."]],
+ deaths:["Military deaths, approximate",[["Germany","2.0 million"],["Russia","1.8 million"],["France","1.4 million"],["Austria-Hungary","1.2 million"],["British Empire","0.9 million"],["Ottoman Empire","0.8 million"],["Italy","0.65 million"],["United States","0.12 million"]]]
+},
+mid:{tab:"1919–39",name:"Between the wars",
+ lead:"The peace of 1919 lasted twenty years. These are the steps that turned the end of one war into the start of the next.",
+ steps:[
+  ["1919","A resented peace","Germans across the political spectrum saw Versailles as a humiliation. Italy and Japan, though on the winning side, also felt cheated of their rewards."],
+  ["1922","Mussolini takes power in Italy","The first fascist government: one leader, one party, violence against opponents and dreams of empire."],
+  ["1923","German hyperinflation","Germany printed money to meet its debts and the currency became worthless. Savings were wiped out and faith in democracy with them."],
+  ["1929","The Great Depression","The Wall Street crash spread around the world. By 1932 about six million Germans were unemployed, and extremist parties surged."],
+  ["1931","Japan invades Manchuria","Japan seized north-eastern China. The League of Nations protested and did nothing. Japan launched a full invasion of China in 1937."],
+  ["30 January 1933","Hitler becomes chancellor","Within months the Nazis had ended democracy in Germany. They began rearming, persecuting Jews and preparing for conquest."],
+  ["1935 to 1936","Breaking the treaty","Germany reintroduced conscription and, in March 1936, sent troops into the Rhineland. Italy invaded Ethiopia. Nobody stopped either."],
+  ["1936 to 1939","The Spanish Civil War","Germany and Italy helped Franco's nationalists win and tested their weapons and tactics."],
+  ["March 1938","The Anschluss","Germany annexed Austria."],
+  ["September 1938","The Munich Agreement","Britain and France let Hitler take the Sudetenland from Czechoslovakia in the hope of avoiding war. This policy is known as appeasement. In March 1939 he took the rest of the country."],
+  ["23 August 1939","The Nazi-Soviet Pact","Hitler and Stalin agreed not to fight each other and secretly to divide Poland. Nine days later Germany invaded."]]
+},
+ww2:{tab:"WWII",name:"World War II",
+ lead:"The largest and deadliest war in history. It was fought on every ocean and most continents, killed more civilians than soldiers, and ended with the first use of nuclear weapons.",
+ glance:[["1939–1945","1 September 1939 to 2 September 1945"],["70–85 million","dead, most of them civilians"],["About 3%","of the world's population killed"],["Total surrender","Germany in May, Japan in September 1945"]],
+ causes:[
+  ["The legacy of Versailles","The treaty left Germany resentful and unstable without leaving it too weak to recover. Hitler built his career on the promise to tear it up."],
+  ["The Great Depression","Mass unemployment discredited democratic governments and drove voters toward parties that promised order and national revival."],
+  ["Fascism and Nazi ideology","Hitler believed Germans were a master race entitled to \"living space\" in eastern Europe, and that Jews were an enemy to be removed. War and genocide were aims of the regime, not accidents."],
+  ["Japanese expansion","Japan's military leaders sought an empire in Asia to secure oil, rubber and other resources. They had been at war in China since 1937."],
+  ["Appeasement and a weak League","Britain and France, haunted by the last war, gave way again and again. The League of Nations could not stop aggression in Manchuria, Ethiopia or central Europe."],
+  ["The spark: Poland, 1 September 1939","Germany invaded Poland. Britain and France, which had promised to defend it, declared war on 3 September."]],
+ sides:[["The Allies",[
+   ["Britain and the Commonwealth","In the war from 3 September 1939 to the end. For a year after the fall of France, Britain and its empire fought Germany almost alone."],
+   ["Soviet Union","Signed a pact with Hitler in 1939, then was invaded in June 1941. It did most of the fighting against the German army and suffered by far the greatest losses, about 24 to 27 million dead."],
+   ["United States","Supplied the Allies from 1941 and entered the war after Pearl Harbor in December that year. Its industry out-produced all the Axis powers combined."],
+   ["China","Fought Japan from 1937, tying down much of the Japanese army. Chinese deaths are estimated at 15 to 20 million."],
+   ["France","Defeated in six weeks in 1940 and occupied. The Free French under de Gaulle and the Resistance fought on."],
+   ["Others","Poland, Canada, Australia, India, Yugoslavia, Greece, the Netherlands, Norway and many more."]]],
+  ["The Axis",[
+   ["Germany","Conquered most of Europe between 1939 and 1942. It was ground down in the Soviet Union and then crushed between Soviet and Western armies."],
+   ["Italy","Joined in June 1940 under Mussolini. It fought in North Africa, Greece and the Soviet Union, then surrendered in September 1943 and changed sides."],
+   ["Japan","Already at war in China, it attacked the United States and European colonies in December 1941 and overran South-East Asia. It fought on until August 1945."],
+   ["Others","Hungary, Romania, Bulgaria, Slovakia and Croatia were allied to Germany. Finland fought alongside it against the Soviet Union."]]]],
+ years:[1939,1940,1941,1942,1943,1944,1945],
+ time:[
+  [1939,"1 September","Germany invades Poland","Tanks and aircraft working together break through in days, a method later called blitzkrieg. Britain and France declare war on 3 September."],
+  [1939,"17 September","The Soviet Union invades Poland","Stalin takes the eastern half under his pact with Hitler. Poland is partitioned by October."],
+  [1940,"April to June","The fall of western Europe","Germany takes Denmark and Norway, then on 10 May attacks the Netherlands, Belgium and France. France signs an armistice on 22 June."],
+  [1940,"26 May to 4 June","Dunkirk","About 338,000 British and French soldiers are evacuated across the Channel by warships and small boats."],
+  [1940,"July to October","The Battle of Britain","The Royal Air Force defeats the German air force's attempt to win control of the skies. Hitler postpones his invasion of Britain."],
+  [1940,"September 1940 to May 1941","The Blitz","German bombers attack London and other British cities night after night, killing about 43,000 civilians."],
+  [1941,"22 June","Operation Barbarossa","More than three million Axis troops invade the Soviet Union, the largest invasion in history. The war in the east becomes a war of extermination."],
+  [1941,"From summer","The Holocaust begins in the east","Mobile killing squads follow the army and shoot Jewish men, women and children. At Babi Yar near Kyiv more than 33,000 are murdered in two days."],
+  [1941,"September 1941 to January 1944","The Siege of Leningrad","The city is cut off for 872 days. Around a million civilians die, mostly of hunger."],
+  [1941,"7 December","Pearl Harbor","Japan attacks the US Pacific Fleet in Hawaii, killing 2,403 Americans. The United States enters the war and Germany declares war on it four days later."],
+  [1941,"December","The Battle of Moscow","A Soviet counter-attack in deep winter throws the Germans back from the capital. The quick victory Hitler expected is gone."],
+  [1942,"20 January","The Wannsee Conference","Senior Nazi officials coordinate the \"Final Solution\", the murder of all of Europe's Jews. Death camps such as Auschwitz, Treblinka and Sobibor kill on an industrial scale."],
+  [1942,"15 February","Singapore falls","Japan captures Britain's main base in Asia with some 80,000 prisoners. It soon controls most of South-East Asia."],
+  [1942,"4 to 7 June","The Battle of Midway","American aircraft sink four Japanese carriers. Japan never regains the initiative in the Pacific."],
+  [1942,"August 1942 to February 1943","The Battle of Stalingrad","Months of street fighting end with a German army surrounded. Its surrender on 2 February 1943 is the turning point of the war in Europe."],
+  [1942,"October to November","El Alamein","British and Commonwealth forces defeat Rommel in Egypt. Axis troops in North Africa surrender in May 1943."],
+  [1943,"April to May","The Warsaw Ghetto Uprising","Jewish fighters hold out against German troops for nearly a month."],
+  [1943,"July to August","The Battle of Kursk","The largest tank battle in history. Germany's last major offensive in the east fails."],
+  [1943,"July to September","Italy invaded","The Allies land in Sicily. Mussolini is overthrown and Italy surrenders on 8 September. German troops occupy the country and fight on."],
+  [1944,"6 June","D-Day","About 156,000 Allied troops land in Normandy on the first day, the largest seaborne invasion ever. Paris is liberated on 25 August."],
+  [1944,"June to August","Operation Bagration","A vast Soviet offensive destroys a German army group and reaches the edge of Warsaw."],
+  [1944,"October","The Battle of Leyte Gulf","The largest naval battle of the war ends Japan's navy as an effective force."],
+  [1944,"December","The Battle of the Bulge","Germany's last offensive in the west is stopped in the Ardennes."],
+  [1945,"27 January","Auschwitz liberated","Soviet troops reach the largest death camp. About 1.1 million people were murdered there."],
+  [1945,"February","Yalta","Roosevelt, Churchill and Stalin meet to plan the post-war world and the division of Germany."],
+  [1945,"30 April","Hitler's death","With Soviet troops streets away, Hitler kills himself in his Berlin bunker."],
+  [1945,"8 May","Victory in Europe","Germany surrenders unconditionally."],
+  [1945,"6 and 9 August","Hiroshima and Nagasaki","The United States drops atomic bombs on two Japanese cities. Between them they kill an estimated 110,000 to 210,000 people by the end of the year."],
+  [1945,"8 August","The Soviet Union attacks Japan","Soviet forces sweep into Japanese-held Manchuria."],
+  [1945,"15 August and 2 September","Japan surrenders","Emperor Hirohito announces the surrender on 15 August. It is signed aboard the USS Missouri in Tokyo Bay on 2 September."]],
+ end:[
+  ["Unconditional surrender","Unlike 1918, the Allies demanded total surrender. Germany and Japan were occupied, disarmed and rebuilt under Allied control."],
+  ["The Holocaust revealed","Nazi Germany murdered six million Jews, about two thirds of Europe's Jewish population. It also killed Roma, disabled people, Soviet prisoners of war, Poles and others in their millions."],
+  ["War crimes trials","At Nuremberg from November 1945, and later in Tokyo, surviving leaders were tried for war crimes and crimes against humanity. The trials established that following orders is no defence."]],
+ after:[
+  ["The United Nations","Founded on 24 October 1945 to keep the peace, with the five main victors as permanent members of its Security Council."],
+  ["The Cold War","The United States and the Soviet Union emerged as rival superpowers. Germany and Europe were divided between them for 45 years."],
+  ["The nuclear age","Nuclear weapons changed what war between great powers would mean."],
+  ["The end of empires","Weakened European powers lost their colonies. India and Pakistan became independent in 1947, Syria and Lebanon saw the last French troops leave in 1946, and most of Asia and Africa followed."],
+  ["Israel and Palestine","In the aftermath of the Holocaust, Israel was founded in 1948. The war that followed displaced about 700,000 Palestinians."],
+  ["Rebuilding and rights","The Marshall Plan helped rebuild western Europe. The Universal Declaration of Human Rights was adopted in 1948, and western European cooperation grew into today's European Union."]],
+ deaths:["Total deaths, military and civilian, approximate",[["Soviet Union","24–27 million"],["China","15–20 million"],["Germany","about 7 million"],["Poland","about 6 million"],["Japan","about 3 million"],["Yugoslavia","about 1 million"],["France","0.6 million"],["Italy","0.5 million"],["United Kingdom","0.45 million"],["United States","0.42 million"]]]
+},
+cmp:{tab:"Compare",name:"Side by side",
+ lead:"The same continent, many of the same countries, twenty-one years apart.",
+ rows:[
+  ["Dates","28 July 1914 to 11 November 1918","1 September 1939 to 2 September 1945"],
+  ["Length","4 years, 3 months","6 years"],
+  ["Deaths","16 to 20 million","70 to 85 million"],
+  ["Who died","Mostly soldiers","Mostly civilians"],
+  ["Main sides","Allies against the Central Powers","Allies against the Axis"],
+  ["Where","Mainly Europe and the Middle East","Europe, Asia, Africa and the Pacific"],
+  ["How it was fought","Trenches, artillery and attrition","Tanks, aircraft, fast movement and bombing of cities"],
+  ["New weapons","Poison gas, tanks, submarines, aircraft","Radar, long-range rockets, aircraft carriers, the atomic bomb"],
+  ["Genocide","The Armenian Genocide","The Holocaust"],
+  ["How it ended","Armistice and a negotiated treaty","Unconditional surrender and occupation"],
+  ["What followed","League of Nations, resentment, another war","United Nations, Cold War, decolonisation"]]
+}};
+
+
+// simplified flags, 60 x 40
+const th=(a,b,c)=>`<rect width="60" height="40" fill="${a}"/><rect y="13.3" width="60" height="13.4" fill="${b}"/><rect y="26.7" width="60" height="13.3" fill="${c}"/>`;
+const tv=(a,b,c)=>`<rect width="60" height="40" fill="${a}"/><rect x="20" width="20" height="40" fill="${b}"/><rect x="40" width="20" height="40" fill="${c}"/>`;
+const star=(x,y,r,f)=>{let p="";for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.4:r;p+=(x+q*Math.cos(a)).toFixed(1)+","+(y+q*Math.sin(a)).toFixed(1)+" ";}return `<polygon points="${p}" fill="${f}"/>`;};
+const F={
+ fr:tv("#0055A4","#fff","#EF4135"), ru:th("#fff","#0039A6","#D52B1E"), it:tv("#009246","#fff","#CE2B37"),
+ rs:th("#C6363C","#0C4076","#fff"), be:tv("#111","#FAE042","#ED2939"), de:th("#111","#fff","#DD0000"), bg:th("#fff","#00966E","#D62612"),
+ uk:`<rect width="60" height="40" fill="#012169"/><path d="M0,0L60,40M60,0L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0L60,40M60,0L0,40" stroke="#C8102E" stroke-width="3"/><path d="M30,0V40M0,20H60" stroke="#fff" stroke-width="12"/><path d="M30,0V40M0,20H60" stroke="#C8102E" stroke-width="7"/>`,
+ us:`<rect width="60" height="40" fill="#fff"/>`+[0,2,4,6,8,10,12].map(i=>`<rect y="${(i*40/13).toFixed(2)}" width="60" height="3.08" fill="#B22234"/>`).join("")+`<rect width="26" height="21.5" fill="#3C3B6E"/>`+[0,1,2].map(r=>[0,1,2,3].map(c=>`<circle cx="${4+c*6}" cy="${4+r*6.5}" r="1.2" fill="#fff"/>`).join("")).join(""),
+ jp:`<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="11" fill="#BC002D"/>`,
+ ah:`<rect width="60" height="40" fill="#111"/><rect y="20" width="60" height="20" fill="#F7D117"/>`,
+ ot:`<rect width="60" height="40" fill="#E30A17"/><circle cx="24" cy="20" r="10" fill="#fff"/><circle cx="27" cy="20" r="8" fill="#E30A17"/>`+star(38,20,5,"#fff"),
+ su:`<rect width="60" height="40" fill="#CC0000"/>`+star(12,11,6,"#FFD700"),
+ cn:`<rect width="60" height="40" fill="#FE0000"/><rect width="30" height="20" fill="#000095"/><circle cx="15" cy="10" r="5" fill="#fff"/>`,
+ more:`<rect width="60" height="40" fill="var(--bg)"/><path d="M30,12V28M22,20H38" stroke="var(--muted)" stroke-width="3" stroke-linecap="round"/>`
+};
+D.ww1.flags=[["fr","uk","ru","it","us","more"],["de","ah","ot","bg"]];
+D.ww2.flags=[["uk","su","us","cn","fr","more"],["de","it","jp","more"]];
+
+// silhouettes, 120 x 60
+const wheel=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}"/><circle class="c" cx="${x}" cy="${y}" r="${r*.45}"/>`;
+const I={
+ mg:`<path d="M14,24h44v-4h46v14h-46v-4h-44z"/><path d="M50,32l-18,24h7l15,-20zM58,32l15,24h-7l-12,-20z"/>`,
+ gun:`<path d="M40,36l56,-24l3,8l-56,24z"/><path d="M46,44l-38,10v-6l36,-10z"/><circle class="l" cx="46" cy="42" r="13" style="stroke-width:5"/><circle cx="46" cy="42" r="3"/>`,
+ tank1:`<path d="M6,42l22,-28h62l22,22l-14,16h-78z"/><path class="c" d="M16,42l16,-20h56l14,14l-8,10h-68z" opacity=".25"/><rect x="46" y="26" width="26" height="14"/><rect x="72" y="31" width="18" height="3"/>`,
+ biplane:`<path d="M14,32q30,-8 70,-2l22,-10v10l-18,6q-40,6 -74,0z"/><rect x="28" y="10" width="46" height="4" rx="2"/><rect x="30" y="36" width="42" height="4" rx="2"/><path class="l" d="M36,14v22M66,14v22M44,40l-4,10M52,40l-6,10" style="stroke-width:2"/><rect x="9" y="16" width="3" height="30" rx="1.5"/>`+wheel(42,52,5),
+ uboat:`<path d="M4,40q56,-16 112,0q-56,16 -112,0z"/><rect x="52" y="20" width="18" height="14"/><rect x="60" y="8" width="2.5" height="14"/><rect x="34" y="27" width="10" height="3"/>`,
+ gas:`<path d="M40,6q20,-6 40,0q12,22 0,38l-12,4v8h-16v-8l-12,-4q-12,-16 0,-38z"/><circle class="c" cx="50" cy="24" r="7"/><circle class="c" cx="70" cy="24" r="7"/><rect class="c" x="54" y="46" width="12" height="3"/>`,
+ taxi:`<path d="M16,44v-16h16l4,-16h38v16h26v16z"/><rect class="c" x="40" y="16" width="14" height="12"/><rect class="c" x="58" y="16" width="12" height="12"/>`+wheel(34,46,9)+wheel(86,46,9),
+ tank2:`<path d="M12,40l8,-10h78l12,10z"/><path d="M40,30l4,-12h30l6,12z"/><rect x="78" y="21" width="38" height="4"/><rect x="6" y="40" width="108" height="14" rx="7"/>`+[20,38,56,74,92].map(x=>`<circle class="c" cx="${x+4}" cy="47" r="4"/>`).join(""),
+ fighter:`<path d="M8,30q10,-8 30,-8h40l30,4v6l-30,2h-50q-14,0 -20,-4z"/><path d="M98,26l8,-14h6v16z"/><path class="c" d="M46,23q8,-8 18,0z"/><ellipse cx="52" cy="37" rx="22" ry="4"/><rect x="4" y="14" width="3" height="32" rx="1.5"/>`,
+ carrier:`<path d="M2,34h116l-10,18h-92z"/><path d="M70,34v-14h10v-8h4v8h8v14z"/><path d="M14,30h14v3h-14zM34,30h14v3h-14z"/>`,
+ jeep:`<path d="M10,44v-12h36v-4h30v4l24,3v9z"/><path d="M52,28l6,-14h3l-5,14z"/><rect x="30" y="22" width="12" height="8" rx="2"/>`+wheel(32,46,10)+wheel(84,46,10),
+ v2:`<path d="M6,30q22,-13 74,-9v18q-52,4 -74,-9z"/><path d="M78,21l24,-13v44l-24,-13z"/><path class="c" d="M40,20v20h4v-20z" opacity=".4"/>`,
+ radar:`<rect class="l" x="26" y="6" width="68" height="20"/><path class="l" d="M43,6v20M60,6v20M77,6v20M26,16h68" style="stroke-width:2"/><path d="M56,26h8l10,30h-28z"/>`,
+ bomb:`<ellipse cx="50" cy="30" rx="36" ry="19"/><path d="M82,22h10v16h-10z"/><path class="l" d="M92,14v32M92,14h18v32h-18M101,14v32" style="stroke-width:2.5"/>`
+};
+D.ww1.machines=[
+ ["mg","Machine gun","A single gun could fire 400 to 600 rounds a minute. Soldiers attacking across open ground were cut down, which is why both sides dug trenches."],
+ ["gun","Artillery","The biggest killer of the war. Shellfire caused more than half of all battlefield casualties, and bombardments could last for days."],
+ ["tank1","Tank","Britain's Mark I went into action on 15 September 1916 at the Somme. It crawled at walking pace and often broke down, but it could cross trenches and barbed wire."],
+ ["biplane","Aircraft","Planes began the war as scouts made of wood and canvas. By 1918 there were fighters, bombers and famous aces such as the Red Baron, credited with 80 victories."],
+ ["uboat","U-boat","German submarines sank around 5,000 ships to starve Britain of supplies. Attacks on neutral shipping helped bring the United States into the war."],
+ ["gas","Poison gas","Chlorine, phosgene and mustard gas blinded, burned and choked. Gas caused more than a million casualties and about 90,000 deaths, and every soldier carried a mask."],
+ ["taxi","Taxis and trucks","In September 1914 about 600 Paris taxis rushed some 6,000 soldiers to the Battle of the Marne. By Verdun in 1916, thousands of trucks kept an army supplied along a single road."]];
+D.ww2.machines=[
+ ["tank2","Tank","Fast tanks working with aircraft made the rapid attacks of 1939 to 1941 possible. The Soviet Union built about 84,000 T-34s and the United States about 50,000 Shermans."],
+ ["fighter","Fighter aircraft","Control of the air decided battles on land and sea. The Spitfire, Mustang and Zero became famous, and bombers carried the war to cities."],
+ ["carrier","Aircraft carrier","Carriers replaced battleships as the most powerful ships. At Midway in 1942 the opposing fleets never saw each other, only each other's planes."],
+ ["jeep","Jeep","The small American four-wheel-drive car went everywhere. About 640,000 were built, and Allied armies moved on wheels and fuel on a scale never seen before."],
+ ["uboat","U-boat","German submarines hunted Atlantic convoys in \"wolf packs\" and sank about 3,500 merchant ships. Radar, escorts and codebreaking defeated them by 1943."],
+ ["radar","Radar","Radio waves that detect aircraft and ships at a distance. Britain's radar chain gave its pilots warning of every raid during the Battle of Britain."],
+ ["v2","V-2 rocket","Germany's V-2 of 1944 was the first long-range ballistic missile. About 3,000 were fired at London and Antwerp, and its design led to the first space rockets."],
+ ["bomb","Atomic bomb","Built by the secret Manhattan Project and used on Hiroshima and Nagasaki in August 1945. One aircraft could now destroy a city."]];
+const ic=(k,t)=>`<g class="ic" transform="${t||""}">${I[k]}</g>`;
+const HERO={
+ ww1:`<path d="M0,72h60l6,-6h30l6,6h70l6,-6h30l6,6h146" fill="none" stroke="currentColor" stroke-width="2"/>`+ic("gun","translate(4,26) scale(.75)")+ic("tank1","translate(118,22) scale(.82)")+ic("biplane","translate(214,0) scale(.62)")+ic("mg","translate(248,34) scale(.62)")+ic("taxi","translate(318,44) scale(.42)"),
+ ww2:`<path d="M0,72h360" fill="none" stroke="currentColor" stroke-width="2"/>`+ic("tank2","translate(10,24) scale(.86)")+ic("fighter","translate(104,0) scale(.55)")+ic("jeep","translate(150,32) scale(.66)")+ic("fighter","translate(226,8) scale(.7)")+ic("tank2","translate(262,30) scale(.74)")
+};
+const pg=document.getElementById("pg"), tabs=document.getElementById("tabs");
+const h=(tag,cls,txt)=>{const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e;};
+function row(date,title,text){const b=h("button","row"); b.setAttribute("aria-expanded","false"); if(date)b.appendChild(h("div","d",date)); b.appendChild(h("div","n",title)); b.appendChild(h("div","x",text));
+  b.onclick=()=>{const o=b.classList.toggle("open"); b.setAttribute("aria-expanded",o);}; return b;}
+function section(title,rows,parent){
+  const hd=h("div","hd"); hd.appendChild(h("h2",null,title)); const all=h("button","all","Open all"); hd.appendChild(all); (parent||pg).appendChild(hd);
+  const list=h("div","list"); rows.forEach(r=>list.appendChild(r)); (parent||pg).appendChild(list);
+  all.onclick=()=>{const open=all.textContent==="Open all"; rows.forEach(r=>{r.classList.toggle("open",open); r.setAttribute("aria-expanded",open);}); all.textContent=open?"Close all":"Open all";};
+  return list;
+}
+function deathsTable(d){const hd=h("div","hd"); hd.appendChild(h("h2",null,"The cost by country")); pg.appendChild(hd);
+  const t=h("table"); d[1].forEach(([c,n])=>{const tr=h("tr"); const a=h("td",null,c); a.style.cssText="color:inherit;font-size:14px;width:auto"; tr.append(a,h("td","num",n)); t.appendChild(tr);}); pg.appendChild(t); pg.appendChild(h("p","note",d[0]+". Figures vary between sources."));}
+
+function show(key){
+  const d=D[key]; document.body.className="t-"+key; pg.textContent=""; document.getElementById("main").scrollTop=0;
+  [...tabs.children].forEach(b=>b.setAttribute("aria-selected",b._k===key));
+  pg.appendChild(h("p","lead",d.lead));
+  if(HERO[key]){const he=h("div","hero"); he.innerHTML=`<svg viewBox="0 0 360 76" role="img" aria-label="${d.name}">${HERO[key]}</svg>`; pg.appendChild(he);}
+  if(d.glance){const g=h("div","glance"); d.glance.forEach(([a,b])=>{const c=h("div"); c.append(h("b",null,a),h("span",null,b)); g.appendChild(c);}); pg.appendChild(g);}
+  if(d.sides){const hd=h("div","hd"); hd.appendChild(h("h2",null,"Who fought · tap a flag")); pg.appendChild(hd);
+    const vs=h("div","vs"), det=h("div","det"); let first;
+    d.sides.forEach(([name,m],si)=>{const box=h("div","camp"+(si?" b":"")); box.appendChild(h("h3",null,name)); const g=h("div","flags");
+      m.forEach((x,i)=>{const b=h("button","flag"); b.innerHTML=`<svg viewBox="0 0 60 40" aria-hidden="true">${F[d.flags[si][i]]}</svg>`; b.appendChild(h("span",null,x[0]));
+        b.onclick=()=>{vs.querySelectorAll(".flag").forEach(f=>f.classList.remove("on")); b.classList.add("on"); det.textContent=""; det.append(h("b",null,x[0]+" · "+name),h("p",null,x[1]));};
+        g.appendChild(b); if(!first) first=b;});
+      box.appendChild(g); vs.appendChild(box); if(!si) vs.appendChild(h("div","vsb","VS"));});
+    pg.append(vs,det); first.click();
+    pg.appendChild(h("p","note","Flags are simplified. Germany is shown with its black, white and red tricolour in both wars."));}
+  if(d.causes) section("Why it started",d.causes.map(c=>row(null,c[0],c[1])));
+  if(d.machines){const hd=h("div","hd"); hd.appendChild(h("h2",null,"Machines of the war · tap one")); pg.appendChild(hd);
+    const r=h("div","mach"), det=h("div","det"); let first;
+    d.machines.forEach(m=>{const b=h("button","mc"); b.innerHTML=`<svg viewBox="0 0 120 60" aria-hidden="true">${ic(m[0])}</svg>`; b.appendChild(h("span",null,m[1]));
+      b.onclick=()=>{r.querySelectorAll(".mc").forEach(f=>f.classList.remove("on")); b.classList.add("on"); det.textContent=""; det.append(h("b",null,m[1]),h("p",null,m[2]));}; r.appendChild(b); if(!first) first=b;});
+    pg.append(r,det); first.click();}
+  if(d.time){
+    const rows=d.time.map(t=>{const r=row(/\d{4}/.test(t[1])?t[1]:t[1]+" "+t[0],t[2],t[3]); r._y=t[0]; return r;});
+    const hd=h("div","hd"); hd.appendChild(h("h2",null,"Year by year")); const all=h("button","all","Open all"); hd.appendChild(all); pg.appendChild(hd);
+    const ys=h("div","years"); pg.appendChild(ys); const list=h("div","list"); rows.forEach(r=>list.appendChild(r)); pg.appendChild(list);
+    const pick=y=>{[...ys.children].forEach(b=>b.setAttribute("aria-pressed",b._y===y)); rows.forEach(r=>r.style.display=(!y||r._y===y)?"":"none");};
+    [null,...d.years].forEach(y=>{const b=h("button","yr",y?String(y):"All years"); b._y=y; b.onclick=()=>pick(y); ys.appendChild(b);}); pick(null);
+    all.onclick=()=>{const open=all.textContent==="Open all"; rows.forEach(r=>{r.classList.toggle("open",open); r.setAttribute("aria-expanded",open);}); all.textContent=open?"Close all":"Open all";};
+  }
+  if(d.end) section("How it ended",d.end.map(c=>row(null,c[0],c[1])));
+  if(d.after) section("What it changed",d.after.map(c=>row(null,c[0],c[1])));
+  if(d.deaths) deathsTable(d.deaths);
+  if(d.steps) section("Twenty years, eleven steps",d.steps.map(c=>row(c[0],c[1],c[2])));
+  if(d.rows){const hd=h("div","hd"); hd.appendChild(h("h2",null,"Deaths · each dot is about 2 million people")); pg.appendChild(hd);
+    const pc=h("div","pic"); pc.innerHTML=`<div>World War I · 16 to 20 million</div><span>${"<i></i>".repeat(9)}</span><div>World War II · 70 to 85 million</div><span class="two">${"<i></i>".repeat(39)}</span>`; pg.appendChild(pc);}
+  if(d.rows){const t=h("table"); const tr=h("tr"); ["","World War I","World War II"].forEach(x=>tr.appendChild(h("th",null,x))); t.appendChild(tr);
+    d.rows.forEach(r=>{const x=h("tr"); r.forEach(c=>x.appendChild(h("td",null,c))); t.appendChild(x);}); t.style.marginTop="16px"; pg.appendChild(t);
+    pg.appendChild(h("p","note","Casualty figures are estimates and vary between sources."));}
+}
+Object.keys(D).forEach(k=>{const b=h("button","tab t-"+k,D[k].tab); b._k=k; b.setAttribute("role","tab"); b.onclick=()=>show(k); tabs.appendChild(b);});
+show("ww1");
+</script>
+</body>
+</html>

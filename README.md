@@ -17,6 +17,8 @@
 | ◍ | **Earth** | A living 3D Earth: city lights on the night side, drifting clouds and the seasons set by its real 23.44° tilt. Slice it open to a to‑scale cutaway of the crust, mantle and core, or peel back the layered atmosphere — and flip on the tectonic plates. |
 | 🩻 | **Human Anatomy** | Explore the body in 3D: the full skeleton and the muscular system, every structure named and searchable. Hover to identify any bone or muscle, then lift a single one out on its own and spin it 360°. |
 | ⚛ | **Periodic Table** | All 118 elements, grouped by family. Click any one to open its atom in 3D — a nucleus of protons and neutrons wrapped in its real electron shells — and spin it 360°. |
+| 🎖️ | **The Two World Wars** | Both world wars side by side: why each began, who fought (tap a flag), the machines that changed warfare, a year‑by‑year timeline you can filter, the twenty years between them and what each one left behind. |
+| 🪙 | **The Story of Money** | Scroll through 5,000 years of money, from barter and cowrie shells to coins, paper, the gold standard, plastic and code, with each kind compared for carrying, lasting and trust. |
 
 ### Running it
 

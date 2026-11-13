@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Story of Money</title>
+<style>
+/* Layout: one long scroll through time. A spine runs down the left with a coin at each stop; a fixed
+   reading line marks where you are and the header reads out the date. Look: banknote engraving, green ink and gold on paper. Single theme by choice. */
+:root{
+  --paper:#f2efe3; --card:#fbf9f1; --ink:#1d4a39; --deep:#12241d; --gold:#c8a02a; --silver:#bcc4c7; --copper:#b9743f; --seal:#b03f2c; --muted:#5d6d64; --rule:#cfd3c2;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--deep);font-family:var(--sans);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+
+header{flex:none;padding:10px 16px 8px;border-bottom:3px double var(--ink);background:var(--paper)}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;max-width:640px;margin:0 auto}
+h1{font-family:var(--serif);font-size:18px;margin:0;color:var(--ink);letter-spacing:.02em}
+#when{font-size:13px;font-weight:700;color:var(--seal);text-align:right;font-variant-numeric:tabular-nums}
+.jump{display:flex;gap:6px;max-width:640px;margin:8px auto 0}
+.jump button{flex:1;border:1px solid var(--ink);background:var(--card);border-radius:2px;padding:6px 0;font-size:12px;cursor:pointer;color:var(--ink)}
+.jump button.on{background:var(--ink);color:var(--card)}
+#prog{height:3px;background:var(--rule);max-width:640px;margin:8px auto 0}
+#prog i{display:block;height:100%;width:0;background:var(--gold)}
+
+#wrap{position:relative;flex:1;min-height:0}
+#main{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#line{position:absolute;left:0;width:30px;top:30%;border-top:2px solid var(--seal);opacity:.8;pointer-events:none}
+#line::before{content:"";position:absolute;left:0;top:-6px;border:5px solid transparent;border-left-color:var(--seal)}
+.in{max-width:640px;margin:0 auto;padding:0 16px 0 40px;position:relative}
+.in::before{content:"";position:absolute;left:19px;top:0;bottom:0;border-left:2px solid var(--ink)}
+.intro{font-size:14.5px;line-height:1.5;color:var(--muted);margin:0;padding:16px 0 4px;max-width:62ch}
+.intro b{color:var(--ink)}
+.st{position:relative;padding:22px 0 26px;border-bottom:1px solid var(--rule)}
+.mk{position:absolute;left:-29px;top:26px;width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:var(--card);transition:transform .2s, background .2s}
+.st.past .mk{background:var(--ink)}
+.st.here .mk{background:var(--gold);transform:scale(1.35)}
+@media (prefers-reduced-motion: reduce){.mk{transition:none}}
+.date{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--seal);font-weight:700}
+h2{font-family:var(--serif);font-size:23px;line-height:1.15;margin:4px 0 12px;color:var(--ink);text-wrap:balance}
+.plate{border:1px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;background:var(--card);border-radius:2px;margin:3px 3px 16px}
+.plate svg{display:block;width:100%;height:auto}
+.body{font-size:15.5px;line-height:1.55;margin:0;max-width:62ch}
+.fact{font-size:14px;line-height:1.5;margin:12px 0 0;padding:10px 12px;background:var(--card);border-left:3px solid var(--gold);max-width:62ch}
+.fact b{color:var(--ink)}
+.ribbon{display:flex;margin:14px 0 10px;border:1px solid var(--ink);border-radius:2px;overflow:hidden}
+.ribbon div{flex:1;text-align:center;font-size:11.5px;padding:5px 2px;color:var(--muted);border-right:1px solid var(--rule)}
+.ribbon div:last-child{border-right:0}
+.ribbon div.on{background:var(--ink);color:var(--card);font-weight:700}
+.meters{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted)}
+.bar{display:flex;gap:3px}
+.bar i{flex:1;height:9px;border:1px solid var(--ink);border-radius:1px}
+.bar i.f{background:var(--gold)}
+.foot{font-size:12px;line-height:1.5;color:var(--muted);padding:16px 0;margin:0;max-width:62ch}
+
+/* engraving */
+.i{stroke:var(--ink);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.i .g{fill:var(--gold)} .i .s{fill:var(--silver)} .i .p{fill:#fffdf5} .i .r{fill:var(--seal)} .i .k{fill:var(--ink)} .i .cu{fill:var(--copper)} .i .cl{fill:#cfa77b}
+.i .n{stroke:none} .i .thin{stroke-width:1.2} .i .dash{stroke-dasharray:5 5}
+.i text{font-family:var(--sans);font-size:11px;fill:var(--muted);stroke:none;text-anchor:middle}
+.i text.big{font-family:var(--serif);font-size:30px;fill:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>The Story of Money</h1><div id="when" aria-live="polite"></div></div>
+  <div class="jump" id="jump" aria-label="Jump to a kind of money"></div>
+  <div id="prog"><i></i></div>
+</header>
+<div id="wrap">
+  <div id="main">
+    <div class="in">
+      <p class="intro"><b>Scroll to travel through 5,000 years of money.</b> The red pointer on the left marks where you are. Under each stop, the strip shows what money was made of, and the bars compare how easy it was to carry, how long it lasted and how much it depended on trust.</p>
+      <div id="list"></div>
+      <p class="foot">The bars are a rough guide for comparison, not measurements. Early dates are approximate.</p>
+      <div id="spacer"></div>
+    </div>
+  </div>
+  <div id="line"></div>
+</div>
+
+<script>
+const shell=(x,y,r)=>`<g transform="translate(${x},${y}) rotate(${r})"><ellipse class="p" rx="24" ry="36"/><path d="M0,-27 q-7,27 0,54"/><path class="thin" d="M-2,-18 h-7 M-3,-9 h-8 M-4,0 h-8 M-3,9 h-8 M-2,18 h-7 M2,-18 h6 M2,-9 h7 M2,0 h8 M2,9 h7 M2,18 h6"/></g>`;
+let wedges=""; for(let r=0;r<6;r++)for(let c=0;c<7;c++){const x=104+c*17,y=46+r*18; wedges+=(r+c)%3?`<path class="k" d="M${x},${y} l5,3 l-5,3z"/><path class="thin" d="M${x+5},${y+3} h7"/>`:`<path class="k" d="M${x+3},${y-2} l3,5 l-6,0z"/><path class="thin" d="M${x+3},${y+3} v7"/>`;}
+const mix=t=>{const a=[188,196,199],b=[185,116,63];return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`;};
+const note=(x,y,w,h)=>`<rect class="p" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/><rect class="thin" x="${x+6}" y="${y+6}" width="${w-12}" height="${h-12}"/>`;
+const bar=(x,y)=>`<path class="g" d="M${x},${y} l10,-22 h56 l10,22z"/>`;
+
+const ART=[
+/*barter*/`<path class="s" d="M38,95 q38,-36 84,0 q-46,36 -84,0z"/><path class="s" d="M122,95 l24,-18 v36z"/><circle class="k n" cx="60" cy="90" r="3"/><path d="M158,80 h30 m-8,-7 l8,7 l-8,7 M188,112 h-30 m8,-7 l-8,7 l8,7"/><path class="g" d="M215,48 h50 q-6,12 8,28 q16,40 -12,66 h-42 q-28,-26 -12,-66 q14,-16 8,-28z"/><path class="thin" d="M206,96 h68 M209,108 h62"/>`,
+/*shells*/shell(92,98,-18)+shell(160,88,6)+shell(230,100,22)+`<text x="160" y="176">Cowrie shells</text>`,
+/*tablet*/`<rect class="cl" x="90" y="30" width="140" height="130" rx="18"/>`+wedges,
+/*scales*/`<path d="M160,36 v116 M126,152 h68 M78,52 h164"/><circle class="g" cx="160" cy="36" r="5"/><path class="thin" d="M78,52 l-24,52 M78,52 l24,52 M242,52 l-24,52 M242,52 l24,52"/><path class="g" d="M50,104 h56 q-28,28 -56,0z M214,104 h56 q-28,28 -56,0z"/><path class="s" d="M62,104 l6,-12 l12,2 l2,10z M82,104 l4,-9 l10,3 l-2,6z"/><path class="k" d="M228,104 l5,-18 h18 l5,18z"/><text x="78" y="150">Silver</text><text x="242" y="150">Weight</text>`,
+/*coins*/`<path class="g" d="M48,95 q2,-42 44,-44 q42,2 42,44 q-4,42 -44,42 q-40,-2 -42,-42z"/><rect class="k" x="72" y="78" width="16" height="16" opacity=".45"/><rect class="k" x="94" y="84" width="14" height="20" opacity=".45"/><circle class="cu" cx="232" cy="95" r="44"/><circle class="thin" cx="232" cy="95" r="38"/><rect class="p" x="219" y="82" width="26" height="26"/><text x="91" y="164">Lydia, electrum</text><text x="232" y="164">China, bronze</text>`,
+/*denarius*/[0,.25,.5,.75,1].map((t,i)=>`<circle cx="${48+i*56}" cy="82" r="24" style="fill:${mix(t)}"/><circle class="thin dash" cx="${48+i*56}" cy="82" r="18"/>`).join("")+`<path d="M48,130 h224 m-8,-6 l8,6 l-8,6"/><text x="60" y="158">About 95% silver</text><text x="256" y="158">Under 5%</text><text x="160" y="178">Five centuries of the Roman silver coin</text>`,
+/*dinar*/`<circle class="g" cx="160" cy="95" r="72"/><circle class="thin dash" cx="160" cy="95" r="65"/><circle cx="160" cy="95" r="56"/><path d="M126,74 h68 M118,90 h84 M118,106 h84 M130,122 h60" stroke-width="5" stroke-dasharray="10 4 15 3 6 4" stroke-linecap="butt"/>`,
+/*jiaozi*/`<rect class="p" x="113" y="10" width="94" height="170"/><rect class="thin" x="120" y="17" width="80" height="156"/><rect class="thin" x="127" y="24" width="66" height="50"/>`+[0,1,2].map(c=>[0,1].map(r=>`<circle class="cu thin" cx="${142+c*18}" cy="${38+r*22}" r="7"/><rect class="p n" x="${139.5+c*18}" y="${35.5+r*22}" width="5" height="5"/>`).join("")).join("")+`<path d="M136,88 v72 M150,88 v72 M164,88 v44 M178,88 v36" stroke-width="4" stroke-dasharray="7 3 11 3" stroke-linecap="butt"/><rect class="r" x="164" y="140" width="26" height="26"/>`,
+/*bill*/`<path class="dash" d="M46,150 q114,-150 228,0"/><circle class="k" cx="46" cy="150" r="6"/><circle class="k" cx="274" cy="150" r="6"/><rect class="p" x="110" y="42" width="100" height="66" rx="2" transform="rotate(-5 160 75)"/><path class="thin" d="M124,62 h70 M124,74 h70 M124,86 h44" transform="rotate(-5 160 75)"/><circle class="r" cx="194" cy="94" r="10"/><text x="46" y="174">Florence</text><text x="274" y="174">Bruges</text>`,
+/*banknote*/note(36,40,248,110)+`<circle class="thin" cx="78" cy="95" r="24"/><circle class="thin dash" cx="78" cy="95" r="17"/><text class="big" x="182" y="92">1661</text><path class="thin" d="M132,124 q8,-14 16,0 t16,0 t16,0 M196,124 q7,-12 14,0 t14,0 t14,0"/>`,
+/*gold standard*/note(28,62,112,66)+`<path class="thin" d="M50,86 h68 M50,100 h46"/><path d="M158,86 h22 M158,102 h22" stroke-width="3"/>`+bar(200,150)+bar(238,128)+bar(200,106)+`<text x="84" y="150">A paper promise</text><text x="250" y="172">Gold in the vault</text>`,
+/*fiat*/note(24,62,112,66)+`<path class="thin" d="M46,86 h68 M46,100 h46"/><ellipse cx="160" cy="92" rx="14" ry="8"/><ellipse cx="192" cy="100" rx="14" ry="8"/><path class="thin" d="M176,78 l-3,-10 M182,112 l3,10 M170,110 l-8,8 M186,82 l8,-8" style="stroke:var(--seal)"/>`+bar(214,116)+`<text x="160" y="160">15 August 1971: the link is cut</text>`,
+/*card*/`<rect class="k" x="56" y="32" width="208" height="126" rx="12"/><rect class="g" x="80" y="66" width="34" height="26" rx="4"/><path class="thin" d="M80,79 h34 M97,66 v26"/><g style="stroke:#fffdf5"><path d="M80,116 h28 M118,116 h28 M156,116 h28 M194,116 h28" stroke-width="4" stroke-dasharray="2 5"/><path class="thin" d="M80,138 h70"/><path d="M214,62 q10,12 0,24 M224,56 q16,18 0,36 M234,50 q22,24 0,48"/></g>`,
+/*phone*/`<rect class="p" x="70" y="18" width="84" height="154" rx="12"/><rect class="thin" x="78" y="34" width="68" height="116" rx="3"/><circle class="g" cx="112" cy="84" r="20"/><path d="M103,84 l7,7 l12,-14" stroke-width="3"/><path class="thin" d="M94,124 h36 M100,134 h24"/><path d="M170,74 q12,21 0,42 M184,64 q20,31 0,62 M198,54 q28,41 0,82"/><rect class="k" x="228" y="70" width="46" height="60" rx="5"/><rect class="p n" x="235" y="78" width="32" height="18"/>`,
+/*chain*/[0,1,2,3].map(i=>`<rect class="${i==3?"g":"p"}" x="${22+i*74}" y="62" width="54" height="66" rx="4"/><path class="thin" d="M${30+i*74},78 h38 M${30+i*74},90 h38 M${30+i*74},102 h24"/><rect class="k n" x="${30+i*74}" y="112" width="38" height="6"/>`+(i<3?`<path d="M${76+i*74},95 h20" stroke-width="3"/>`:"")).join("")+`<text x="160" y="156">Each block locks the one before it</text>`,
+/*cbdc*/`<path class="p" d="M40,74 l66,-38 l66,38z"/><path d="M48,74 h116 M44,146 h124"/><path class="p" d="M58,80 h14 v60 h-14z M86,80 h14 v60 h-14z M114,80 h14 v60 h-14z M142,80 h14 v60 h-14z"/><path class="dash" d="M176,110 h36"/><circle class="g" cx="250" cy="110" r="38"/><circle class="thin" cx="250" cy="110" r="30"/><path class="thin" d="M236,110 h28 M250,96 v28 M236,110 l-6,-8 M264,110 l6,8"/><circle class="k" cx="236" cy="110" r="3"/><circle class="k" cx="264" cy="110" r="3"/><circle class="k" cx="250" cy="96" r="3"/><circle class="k" cx="250" cy="124" r="3"/><text x="106" y="166">Central bank</text><text x="250" y="166">Digital cash</text>`
+];
+const KIND=["Goods","Metal","Paper","Accounts","Code"];
+// date, title, body, fact, kind index, [easy to carry, lasts, depends on trust]
+const S=[
+["Before 3000 BCE","Barter, gifts and favours","Before money, people traded goods directly or, more often, simply kept track of who owed what within the village. Direct swaps have a built-in problem: the fisherman must want exactly what the potter has, at the same moment.","<b>Worth knowing:</b> anthropologists have found few societies that ran mainly on barter. Gifts and remembered debts were far more common.",0,[1,2,1]],
+["From about 3000 BCE","Things that became money","Communities settled on goods everyone would accept: cattle, grain, salt, and above all cowrie shells. Cowries were small, hard to fake and countable, and they were used from China to West Africa.","<b>Worth knowing:</b> the word \"salary\" comes from the Latin for salt, and \"pecuniary\" from the Latin for cattle.",0,[3,3,2]],
+["About 3000 BCE","Debts written in clay","In the cities of Mesopotamia, temples and palaces recorded loans, rents and wages on clay tablets, counted in measures of barley and weights of silver. Money as a number in a ledger is older than the coin.","<b>Worth knowing:</b> the Code of Hammurabi, around 1754 BCE, set maximum interest rates: about 20% on silver and 33% on grain.",3,[1,3,3]],
+["About 2500 BCE onward","Metal by weight","Silver, copper and gold were durable, divisible and scarce, so they became the standard way to pay. But every payment meant getting out the scales and checking the metal's purity.","<b>Worth knowing:</b> the shekel was first a weight, about 8 grams, long before it was a coin.",1,[3,5,2]],
+["About 600 BCE","The first coins","In Lydia, in what is now western Türkiye, kings stamped lumps of electrum, a natural gold and silver mix, to guarantee their weight. China arrived at coins separately, casting bronze in the shape of spades and knives and later as round coins with a square hole.","<b>Worth knowing:</b> the Lydian king Croesus issued the first coins of pure gold and pure silver. \"Rich as Croesus\" is still a saying.",1,[4,5,2]],
+["211 BCE to 270s CE","Rome's silver and its slow dilution","The denarius paid Rome's soldiers for centuries. Emperors short of money kept mixing in cheaper metal, so the same coin held less and less silver while prices climbed.","<b>Worth knowing:</b> this is one of history's first well-documented inflations, caused by a government quietly making more money.",1,[4,5,3]],
+["696 CE","The Islamic gold dinar","The Umayyad caliph Abd al-Malik, ruling from Damascus, replaced Byzantine and Persian coins with a new design that carried only inscriptions, no portraits. The gold dinar and silver dirham became trusted from Spain to Central Asia.","<b>Worth knowing:</b> the dinar's weight, about 4.25 grams of gold, stayed almost unchanged for centuries, which is why merchants far beyond the caliphate accepted it.",1,[4,5,2]],
+["About 1000 to 1024","Paper money in China","Carrying strings of heavy iron and copper coins was impractical, so merchants in Sichuan began trading paper receipts. In 1024 the Song government took over and issued the jiaozi, the first state paper money.","<b>Worth knowing:</b> Marco Polo's report of paper money in China, around 1300, struck European readers as barely believable.",2,[5,2,4]],
+["1100s to 1400s","Bills of exchange and banking","A merchant could pay in Florence and have his partner collect in Bruges, with only a letter crossing the Alps. The Islamic world used similar instruments, the suftaja and hawala, even earlier. Banking families such as the Medici grew rich handling them.","<b>Worth knowing:</b> the word \"cheque\" is often traced to the Arabic sakk, a written order to pay.",2,[5,2,4]],
+["1661 and 1694","Europe's first banknotes","Stockholms Banco in Sweden issued Europe's first banknotes in 1661, partly because Swedish copper money was absurdly heavy. The Bank of England followed in 1694, and notes promising to \"pay the bearer\" spread everywhere.","<b>Worth knowing:</b> Stockholms Banco printed too many notes and collapsed within a few years. The lesson has had to be relearned many times.",2,[5,2,4]],
+["1821 to 1914","The gold standard","Britain tied the pound to a fixed weight of gold in 1821, and by the 1870s most trading nations had done the same. Paper was a claim on metal in a vault, which kept prices steady but left governments little room in a crisis.","<b>Worth knowing:</b> the system broke down when the First World War began and governments needed to print money to fight it.",2,[5,3,3]],
+["1944 and 1971","Money backed by trust alone","At Bretton Woods in 1944, currencies were pegged to the US dollar and the dollar to gold at 35 dollars an ounce. On 15 August 1971 President Nixon ended that link. Since then money has had value because governments declare it and people accept it.","<b>Worth knowing:</b> when trust fails, money dies fast. Germany in 1923 and Zimbabwe in 2008 printed notes in the billions and trillions.",2,[5,3,5]],
+["1950 to 1970s","Plastic and machines","The Diners Club card of 1950 let people pay at restaurants with a signature. Bank credit cards followed, the first cash machine opened in London in 1967, and banks began settling with each other electronically.","<b>Worth knowing:</b> from this point most money is no longer cash at all. It is a balance in a bank's computer.",3,[5,4,5]],
+["1998 to today","Online and mobile money","Online payment services arrived with the web. In 2007 Kenya's M-Pesa let people send money by text message without a bank account, and smartphones later turned into wallets you tap at the till.","<b>Worth knowing:</b> M-Pesa brought millions of people into the financial system who had never had a bank account.",3,[5,4,5]],
+["2009","Bitcoin and the blockchain","After the 2008 financial crisis, someone using the name Satoshi Nakamoto launched a currency with no bank or government behind it. A shared public ledger, kept in step by thousands of computers, records every payment.","<b>Worth knowing:</b> in May 2010 a programmer paid 10,000 bitcoins for two pizzas, the first known purchase with it.",4,[5,4,4]],
+["2020 onward","Central banks go digital","Central banks are now testing digital versions of their own cash. The Bahamas launched the first nationwide one, the Sand Dollar, in 2020, and China has run large trials of a digital yuan.","<b>Worth knowing:</b> the open questions are about privacy and control, since digital cash can be traced in ways paper never could.",4,[5,4,5]]
+];
+
+const $=id=>document.getElementById(id);
+let gd=""; for(let k=0;k<6;k++){let p=""; for(let a=0;a<=360;a+=2){const t=a*Math.PI/180, r=62+18*Math.sin(8*t+k*Math.PI/6); p+=(a?"L":"M")+(160+r*Math.cos(t)*1.9).toFixed(1)+","+(95+r*Math.sin(t)*1.05).toFixed(1);} gd+=p+"Z";}
+const GUIL=`<path d="${gd}" fill="none" stroke="#c8a02a" stroke-width=".6" opacity=".45"/>`;
+const LAB=["Easy to carry","Lasts","Depends on trust"];
+const secs=S.map((s,i)=>{
+  const el=document.createElement("section"); el.className="st";
+  el.innerHTML=`<div class="mk"></div><div class="date"></div><h2></h2>
+   <div class="plate"><svg viewBox="0 0 320 190" role="img">${GUIL}<g class="i">${ART[i]}</g></svg></div>
+   <p class="body"></p><p class="fact">${s[3]}</p>
+   <div class="ribbon">${KIND.map((k,j)=>`<div class="${j===s[4]?"on":""}">${k}</div>`).join("")}</div>
+   <div class="meters">${LAB.map((l,k)=>`<div>${l}</div><div class="bar">${[0,1,2,3,4].map(j=>`<i class="${j<s[5][k]?"f":""}"></i>`).join("")}</div>`).join("")}</div>`;
+  el.querySelector(".date").textContent=s[0]; el.querySelector("h2").textContent=s[1]; el.querySelector(".body").textContent=s[2];
+  el.querySelector("svg").setAttribute("aria-label",s[1]);
+  $("list").appendChild(el); return el;
+});
+const main=$("main"), LINE=0.3;
+const firstOf=KIND.map((k,j)=>S.findIndex(s=>s[4]===j));
+const JUMPS=[["Goods",0],["Coins",4],["Paper",7],["Gold",10],["Digital",12]];
+JUMPS.forEach(([l,i])=>{const b=document.createElement("button"); b.textContent=l; b.onclick=()=>{
+  const calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const y=main.scrollTop+secs[i].getBoundingClientRect().top-main.getBoundingClientRect().top-main.clientHeight*LINE+30;
+  main.scrollTo({top:Math.max(0,y),behavior:calm?"auto":"smooth"});}; $("jump").appendChild(b);});
+let cur=-1;
+function update(){
+  const m=main.getBoundingClientRect(), y=m.top+m.height*LINE; let c=0;
+  secs.forEach((el,i)=>{ if(el.getBoundingClientRect().top<=y) c=i; });
+  const max=main.scrollHeight-main.clientHeight; $("prog").firstElementChild.style.width=(max>0?Math.min(100,main.scrollTop/max*100):0)+"%";
+  if(c===cur) return; cur=c;
+  secs.forEach((el,i)=>{el.classList.toggle("here",i===c); el.classList.toggle("past",i<c);});
+  $("when").textContent=S[c][0];
+  [...$("jump").children].forEach((b,k)=>b.classList.toggle("on",c>=JUMPS[k][1]&&(k===JUMPS.length-1||c<JUMPS[k+1][1])));
+}
+function size(){ $("spacer").style.height=Math.round(main.clientHeight*(1-LINE)-120)+"px"; update(); }
+main.addEventListener("scroll",()=>requestAnimationFrame(update),{passive:true});
+addEventListener("resize",size); size();
+</script>
+</body>
+</html>

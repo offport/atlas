@@ -36,6 +36,9 @@ header{flex:none;background:var(--panel);border-bottom:1px solid var(--rule);dis
 .brand b{letter-spacing:.01em}
 .tabs{display:flex;align-items:stretch;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
 .tabs::-webkit-scrollbar{display:none}
+.tabs.more-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent)}
+.tabs.more-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 34px);mask-image:linear-gradient(90deg,transparent,#000 34px)}
+.tabs.more-l.more-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 34px,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(90deg,transparent,#000 34px,#000 calc(100% - 34px),transparent)}
 .tab{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:0 14px;cursor:pointer;color:var(--muted);
   font-size:13.5px;font-weight:600;white-space:nowrap;position:relative;border-radius:0}
 .tab .ic{font-size:15px}
@@ -116,7 +119,13 @@ const TOPICS=[
    blurb:"Explore the body in 3D: browse every bone and muscle by name, hover to identify any structure, then lift a single bone or muscle out on its own and spin it 360°."},
   {id:"elements", title:"Periodic Table", icon:"⚛", file:"periodic.html",
    grad:"linear-gradient(135deg,#241a52,#6a4bc0 50%,#2f9fd1)",
-   blurb:"All 118 elements, grouped by family. Click any one to open its atom in 3D — a nucleus of protons and neutrons wrapped in its real electron shells — and spin it 360°."}
+   blurb:"All 118 elements, grouped by family. Click any one to open its atom in 3D — a nucleus of protons and neutrons wrapped in its real electron shells — and spin it 360°."},
+  {id:"world-wars", title:"The Two World Wars", icon:"🎖️", file:"two-world-wars.html",
+   grad:"linear-gradient(135deg,#3b4420,#6a7434 45%,#3d5a80)",
+   blurb:"Both world wars side by side: why each began, who fought, the machines that changed warfare, a year-by-year timeline, the twenty years between them and what each one left behind."},
+  {id:"money", title:"The Story of Money", icon:"🪙", file:"story-of-money.html",
+   grad:"linear-gradient(135deg,#12241d,#1d4a39 50%,#c8a02a)",
+   blurb:"Scroll through 5,000 years of money, from barter and cowrie shells to coins, paper, gold, plastic and code — and see how each kind compares for carrying, lasting and trust."}
 ];
 
 const tabsEl=document.getElementById("tabs"), stage=document.getElementById("stage"), cardsEl=document.getElementById("cards");
@@ -142,7 +151,7 @@ TOPICS.forEach(t=>{
 });
 document.getElementById("foot").innerHTML=
   `${TOPICS.length} topics · each one is a standalone file you can open on its own. `+
-  `Tip: inside a topic you can switch its own light/dark theme independently.`;
+  `Each topic keeps its own look, so the light/dark button up here changes Atlas itself, not the topic inside it.`;
 
 // Views (lazy iframes, kept alive so each topic preserves its state)
 function ensureView(t){
@@ -152,6 +161,26 @@ function ensureView(t){
   f.src=t.file; v.appendChild(f);
   stage.appendChild(v); views[t.id]=v; return v;
 }
+
+// The tab strip scrolls sideways once the topics outgrow the header. Keep the selected tab in view, fade the
+// edge that has more tabs beyond it, and let a mouse wheel move the strip.
+function revealTab(b){
+  const pad=28, l=b.offsetLeft-tabsEl.offsetLeft, r=l+b.offsetWidth;
+  if(l-pad<tabsEl.scrollLeft) tabsEl.scrollLeft=l-pad;
+  else if(r+pad>tabsEl.scrollLeft+tabsEl.clientWidth) tabsEl.scrollLeft=r+pad-tabsEl.clientWidth;
+  fadeTabs();
+}
+function fadeTabs(){
+  const max=tabsEl.scrollWidth-tabsEl.clientWidth;
+  tabsEl.classList.toggle("more-l",tabsEl.scrollLeft>2);
+  tabsEl.classList.toggle("more-r",tabsEl.scrollLeft<max-2);
+}
+tabsEl.addEventListener("scroll",fadeTabs,{passive:true});
+tabsEl.addEventListener("wheel",e=>{
+  if(tabsEl.scrollWidth<=tabsEl.clientWidth || Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;
+  e.preventDefault(); tabsEl.scrollLeft+=e.deltaY;
+},{passive:false});
+addEventListener("resize",()=>revealTab(tabEls[current]||tabEls.home));
 
 let current="home";
 function show(id){
@@ -164,6 +193,7 @@ function show(id){
   const sa=document.getElementById("standalone");
   if(t){ sa.style.display="flex"; sa.href=t.file; } else { sa.style.display="none"; }
   current=id;
+  revealTab(tabEls[id]||tabEls.home);      // after the ↗ button is shown or hidden: it changes the strip's width
   try{ location.hash=id==="home"?"":("#"+id); }catch(e){}
   try{ localStorage.setItem("lp.tab",id); }catch(e){}
   document.title = id==="home" ? "Atlas" : (t? t.title+" · Atlas":"Atlas");
